@@ -1,71 +1,46 @@
-# mager-project-copier README
+# Mager Project Copier
 
-This is the README for your extension "mager-project-copier". After writing up a brief description, we recommend including the following sections.
+**Mager Project Copier** is a VS Code extension designed to streamline the process of sharing your code context with AI Large Language Models (LLMs). It allows you to create a comprehensive, AI-ready snapshot of your entire project (or selected parts) with a single click.
 
 ## Features
 
-Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.
+* **One-Click Snapshot**: Instantly copy your project structure and file contents into the clipboard.
+* **Token Estimation**: Real-time estimation of token usage to ensure your context fits within LLM context windows (powered by `tokenEstimator`).
+* **Smart Selection**:
+    * **Framework Detection**: Automatically detects the project framework (e.g., React, Node.js) to apply optimal settings.
+    * **Ignore Patterns**: Respects `.gitignore` and allows custom exclusion rules via `ignoreResolver`.
+    * **Tree View**: Interactively select or deselect specific files and folders via the Sidebar.
+* **Optimized Output**: Formats the output specifically for AI ingestion, including file paths and content delimiters.
+* **Snapshot Splitting**: Automatically handles large projects by splitting snapshots if necessary (via `snapshotSplitter`).
 
-For example if there is an image subfolder under your extension project workspace:
+## Usage
 
-\!\[feature X\]\(images/feature-x.png\)
-
-> Tip: Many popular extensions utilize animations. This is an excellent way to show off your extension! We recommend short, focused animations that are easy to follow.
+1.  Open the **Mager Project** view in the Activity Bar (look for the icon).
+2.  Wait for the extension to scan your workspace.
+3.  Review the file selection in the tree view.
+4.  Check the estimated token count at the bottom.
+5.  Click the **"Copy Snapshot"** button to copy the context to your clipboard.
+6.  Paste it into ChatGPT, Claude, or Gemini.
 
 ## Requirements
 
-If you have any requirements or dependencies, add a section describing those and how to install and configure them.
+* VS Code version 1.107.0 or higher.
 
 ## Extension Settings
 
-Include if your extension adds any VS Code settings through the `contributes.configuration` extension point.
-
-For example:
-
-This extension contributes the following settings:
-
-* `myExtension.enable`: Enable/disable this extension.
-* `myExtension.thing`: Set to `blah` to do something.
+Currently, this extension uses intelligent defaults based on your project type. Future versions will include configurable settings in `settings.json`.
 
 ## Known Issues
 
-Calling out known issues can help limit users opening duplicate issues against your extension.
+* Please report any issues on the [GitHub Repository](https://github.com/Yoganataa/mager-project-copier/issues).
 
 ## Release Notes
 
-Users appreciate release notes as you update your extension.
-
-### 1.0.0
-
-Initial release of ...
-
-### 1.0.1
-
-Fixed issue #.
-
-### 1.1.0
-
-Added features X, Y, and Z.
+### 0.0.1
+* Initial release of Mager Project Copier.
+* Added Sidebar view with file tree.
+* Added token estimation and clipboard copying functionality.
 
 ---
 
-## Following extension guidelines
-
-Ensure that you've read through the extensions guidelines and follow the best practices for creating your extension.
-
-* [Extension Guidelines](https://code.visualstudio.com/api/references/extension-guidelines)
-
-## Working with Markdown
-
-You can author your README using Visual Studio Code. Here are some useful editor keyboard shortcuts:
-
-* Split the editor (`Cmd+\` on macOS or `Ctrl+\` on Windows and Linux).
-* Toggle preview (`Shift+Cmd+V` on macOS or `Shift+Ctrl+V` on Windows and Linux).
-* Press `Ctrl+Space` (Windows, Linux, macOS) to see a list of Markdown snippets.
-
-## For more information
-
-* [Visual Studio Code's Markdown Support](http://code.visualstudio.com/docs/languages/markdown)
-* [Markdown Syntax Reference](https://help.github.com/articles/markdown-basics/)
-
-**Enjoy!**
+**Enjoy coding efficiently!**
