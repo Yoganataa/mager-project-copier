@@ -2,12 +2,23 @@
 import { ProjectNode } from '../types';
 import { normalizePath } from './pathUtils';
 
+/**
+ * Defines the structure for a framework-specific preset rule.
+ * These rules determine which files and directories are automatically selected (checked)
+ * during the scanning process.
+ */
 type PresetRule = {
+  /** List of directory names to explicitly include (and force-include their contents). */
   includeDirs: string[];
+  /** Regular expressions for files that should be explicitly included. */
   includeFiles: RegExp[];
+  /** Regular expressions for paths that should be explicitly excluded from selection. */
   exclude: RegExp[];
 };
 
+/**
+ * A collection of predefined preset rules for various project frameworks.
+ */
 const PRESETS: Record<string, PresetRule> = {
   node: {
     includeDirs: ['src', 'lib', 'config'],
@@ -75,8 +86,12 @@ const PRESETS: Record<string, PresetRule> = {
 };
 
 /**
- * Apply preset rules to the project tree.
- * This function is intentionally deterministic and recursive.
+ * Applies a specific set of framework rules to the project file tree.
+ * * This function modifies the `checked` state of the nodes within the tree in-place
+ * based on the selected preset configuration.
+ *
+ * @param root - The root node of the project tree.
+ * @param preset - The key of the preset to apply (e.g., 'node', 'next', 'laravel').
  */
 export function applyPreset(
   root: ProjectNode,
@@ -87,7 +102,11 @@ export function applyPreset(
 }
 
 /**
- * @param forceInclude - if true, all descendants are forced checked
+ * Recursively applies the preset rules to a specific node and its children.
+ * * @param node - The current project node being evaluated.
+ * @param rule - The preset rule configuration to apply.
+ * @param forceInclude - Indicates whether the current node is within an explicitly included directory.
+ * @returns `true` if the node (or any of its children) is checked; otherwise, `false`.
  */
 function applyNode(
   node: ProjectNode,
@@ -96,7 +115,6 @@ function applyNode(
 ): boolean {
   const path = normalizePath(node.path);
 
-  // Exclude always wins
   if (rule.exclude.some(r => r.test(path))) {
     node.checked = false;
     return false;
@@ -123,7 +141,6 @@ function applyNode(
     return node.checked;
   }
 
-  // file
   if (forceInclude) {
     node.checked = true;
     return true;

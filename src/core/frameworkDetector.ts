@@ -3,7 +3,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 /**
- * Supported project frameworks.
+ * Represents the set of supported project frameworks that can be detected.
  */
 export type Framework =
   | 'node'
@@ -14,7 +14,13 @@ export type Framework =
   | 'unknown';
 
 /**
- * Detects project framework by inspecting root files.
+ * Detects the development framework of a project by inspecting key configuration files in the root directory.
+ *
+ * This function checks for the existence of specific files (e.g., `next.config.js`, `artisan`, `go.mod`)
+ * to determine the project type. The checks are performed in a specific order of precedence.
+ *
+ * @param rootPath - The absolute path to the project's root directory.
+ * @returns The detected {@link Framework}, or `'unknown'` if no matching indicators are found.
  */
 export function detectFramework(
   rootPath: string

@@ -1,46 +1,60 @@
 # Mager Project Copier
 
-**Mager Project Copier** is a VS Code extension designed to streamline the process of sharing your code context with AI Large Language Models (LLMs). It allows you to create a comprehensive, AI-ready snapshot of your entire project (or selected parts) with a single click.
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![VS Code](https://img.shields.io/badge/Visual%20Studio%20Code-007ACC?logo=visual-studio-code&logoColor=white)](https://code.visualstudio.com/)
+[![GitHub Release](https://img.shields.io/github/v/release/yoganataa/mager-project-copier?label=latest%20release)](https://github.com/yoganataa/mager-project-copier/releases)
 
-## Features
+**Mager Project Copier** is a powerful VS Code extension designed to streamline the process of sharing your code context with AI Large Language Models (LLMs) like Claude, GPT-4, and Gemini.
 
-* **One-Click Snapshot**: Instantly copy your project structure and file contents into the clipboard.
-* **Token Estimation**: Real-time estimation of token usage to ensure your context fits within LLM context windows (powered by `tokenEstimator`).
-* **Smart Selection**:
-    * **Framework Detection**: Automatically detects the project framework (e.g., React, Node.js) to apply optimal settings.
-    * **Ignore Patterns**: Respects `.gitignore` and allows custom exclusion rules via `ignoreResolver`.
-    * **Tree View**: Interactively select or deselect specific files and folders via the Sidebar.
-* **Optimized Output**: Formats the output specifically for AI ingestion, including file paths and content delimiters.
-* **Snapshot Splitting**: Automatically handles large projects by splitting snapshots if necessary (via `snapshotSplitter`).
+Stop manually copying files one by one. Create a comprehensive, AI-ready snapshot of your entire project (or just the git changes) with a single click.
 
-## Usage
+## ✨ Key Features
 
-1.  Open the **Mager Project** view in the Activity Bar (look for the icon).
-2.  Wait for the extension to scan your workspace.
-3.  Review the file selection in the tree view.
-4.  Check the estimated token count at the bottom.
-5.  Click the **"Copy Snapshot"** button to copy the context to your clipboard.
-6.  Paste it into ChatGPT, Claude, or Gemini.
+* **🚀 One-Click Snapshot**: Instantly copy your project structure and file contents into the clipboard.
+* **🧠 Model-Aware Output**: Automatically formats the output based on your target AI:
+    * **XML Format** for **Claude** (Optimized for long-context reasoning).
+    * **Markdown** for **GPT-4** & **Gemini**.
+* **Git Integration**: Use **"Scan Git"** to copy *only* modified and untracked files. Perfect for Code Reviews!
+* **⚡ Auto-Update**: Self-hosted auto-update system. The extension automatically checks GitHub Releases for new versions.
+* **🎨 Custom Templates**: Add your own prompts via `settings.json` (e.g., "Senior Java Review", "Security Audit").
+* **🛡️ Smart Filtering**:
+    * Respects `.gitignore` rules.
+    * Auto-hides sensitive files (`.env`, secrets).
+    * **Performance Guard**: Automatically ignores large files (>1MB) to prevent freezing.
+* **🔍 Search & Navigate**: Real-time filter bar in the sidebar tree view.
+* **📂 Context Menu**: Right-click any folder in Explorer to **"Copy Snapshot"** instantly.
 
-## Requirements
+## 📥 Installation
 
-* VS Code version 1.107.0 or higher.
+Since this extension is **Self-Hosted** (not in the Marketplace yet), you can install it manually:
 
-## Extension Settings
+1.  Go to the [**Releases**](https://github.com/yoganataa/mager-project-copier/releases) page.
+2.  Download the latest `.vsix` file.
+3.  In VS Code, open the Extensions view (`Ctrl+Shift+X`).
+4.  Click the `...` menu (Views and More Actions) > **Install from VSIX...**
+5.  Select the downloaded file.
 
-Currently, this extension uses intelligent defaults based on your project type. Future versions will include configurable settings in `settings.json`.
+## 📖 Usage
 
-## Known Issues
+### 1. Sidebar Panel
+Open the **Mager Project** view in the Activity Bar.
+* **Scan All**: Scans the entire workspace.
+* **Scan Git**: Scans only files that have changed (modified/new).
+* **Templates**: Select a preset (e.g., "Code Review") or a custom template.
+* **Copy**: Copies the snapshot to your clipboard.
 
-* Please report any issues on the [GitHub Repository](https://github.com/Yoganataa/mager-project-copier/issues).
+### 2. Quick Copy (Context Menu)
+Right-click on any folder in your file explorer and select **"Copy Snapshot (Mager Project)"**.
 
-## Release Notes
+### 3. Custom Templates
+You can define your own reusable prompts in your VS Code `settings.json`:
 
-### 0.0.1
-* Initial release of Mager Project Copier.
-* Added Sidebar view with file tree.
-* Added token estimation and clipboard copying functionality.
-
----
-
-**Enjoy coding efficiently!**
+```json
+"magerProject.customTemplates": [
+  {
+    "id": "senior-review",
+    "label": "Senior Dev Review",
+    "description": "Strict code review mode",
+    "prompt": "You are a Senior Engineer. Review this code strictly for performance:\n\n{context}"
+  }
+]

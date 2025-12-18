@@ -1,11 +1,12 @@
 // src/utils/languageMapper.ts
 
 /**
- * Maps a file name to a Markdown code fence language.
- * This is optimized for AI consumption.
+ * Maps a given filename to a Markdown-compatible language identifier.
+ * * This function is used to ensure that code blocks in the generated snapshot
+ * have correct syntax highlighting when consumed by AI models or rendered in Markdown viewers.
  *
- * @param fileName - File name with extension
- * @returns Markdown language identifier
+ * @param fileName - The full name of the file, including its extension.
+ * @returns The string identifier for the language (e.g., 'ts', 'python'), or an empty string if the extension is unrecognized.
  */
 export function mapLanguage(fileName: string): string {
   const ext = fileName.split('.').pop()?.toLowerCase();

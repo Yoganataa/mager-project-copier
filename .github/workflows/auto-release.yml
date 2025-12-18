@@ -1,0 +1,94 @@
+name: Auto Release & Publish
+
+on:
+  push:
+    branches:
+      - master
+
+permissions:
+  contents: write
+
+jobs:
+  check-and-release:
+    runs-on: ubuntu-latest
+    steps:
+      # Check out the repository with full history to ensure tags are visible
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      # Extract the version from package.json to determine the release tag
+      - name: Get Version from package.json
+        id: package-version
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "Detected package.json version: $VERSION"
+
+      # Idempotency check: Stop if the tag already exists to avoid errors
+      - name: Check if Tag Exists
+        id: check-tag
+        run: |
+          if git rev-parse "v${{ env.VERSION }}" >/dev/null 2>&1; then
+            echo "Tag v${{ env.VERSION }} already exists. Skipping release."
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "Tag v${{ env.VERSION }} does not exist. Proceeding with release."
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
+      # Parse CHANGELOG.md to get the description for this specific version
+      - name: Extract Changelog for this Version
+        if: steps.check-tag.outputs.exists == 'false'
+        id: extract-changelog
+        run: |
+          # Target version from environment
+          VERSION="${{ env.VERSION }}"
+          
+          # AWK script to extract content between "## [VERSION]" and the next "## [" header
+          CHANGELOG_BODY=$(awk -v ver="$VERSION" '/^## \['"$ver"'\]/ {flag=1; next} /^## \[/ {flag=0} flag' CHANGELOG.md)
+          
+          # Handle multiline output for GitHub Actions environment variables
+          echo "BODY<<EOF" >> $GITHUB_OUTPUT
+          echo "$CHANGELOG_BODY" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Create Git Tag
+        if: steps.check-tag.outputs.exists == 'false'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "v${{ env.VERSION }}" -m "Release v${{ env.VERSION }}"
+          git push origin "v${{ env.VERSION }}"
+
+      - name: Install Dependencies
+        if: steps.check-tag.outputs.exists == 'false'
+        run: npm ci
+
+      - name: Install vsce
+        if: steps.check-tag.outputs.exists == 'false'
+        run: npm install -g @vscode/vsce
+
+      - name: Package Extension
+        if: steps.check-tag.outputs.exists == 'false'
+        run: vsce package
+
+      # Create GitHub Release and upload the .vsix file
+      - name: Create Release
+        if: steps.check-tag.outputs.exists == 'false'
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ env.VERSION }}
+          name: v${{ env.VERSION }}
+          body: ${{ steps.extract-changelog.outputs.BODY }}
+          files: "*.vsix"
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

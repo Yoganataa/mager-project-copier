@@ -3,29 +3,26 @@ import fs from 'fs';
 import path from 'path';
 import ignore, { Ignore } from 'ignore';
 
+/**
+ * Configuration options for initializing the IgnoreResolver.
+ */
 export type IgnoreOptions = {
-  /** Absolute workspace root */
+  /** The absolute path to the workspace root directory. */
   rootPath: string;
 
-  /** Use .gitignore as ignore source */
+  /** Whether to respect rules defined in the project's .gitignore file. */
   useGitIgnore: boolean;
 
-  /** Hide sensitive files (.env, keys, etc) */
+  /** Whether to automatically exclude sensitive files (e.g., .env, private keys). */
   excludeSensitive: boolean;
 };
 
 /**
- * IgnoreResolver
- *
- * Single source of truth for deciding:
- * - what is hidden
- * - what is visible
- * - what is selectable
- *
- * This resolver is optimized for:
- * - AI reasoning
- * - security
- * - low noise
+ * The IgnoreResolver acts as the single source of truth for file visibility and selection eligibility.
+ * * It is designed to optimize the scanning process for AI contexts by:
+ * - Filtering out high-noise directories (e.g., node_modules, build artifacts).
+ * - Enforcing security by hiding sensitive files.
+ * - Respecting version control ignore rules when requested.
  */
 export class IgnoreResolver {
   private readonly rootPath: string;
@@ -33,12 +30,9 @@ export class IgnoreResolver {
   private gitIgnore: Ignore | null = null;
 
   /**
-   * ABSOLUTE HIDDEN DIRECTORIES
-   * Never shown, never selectable, never scanned.
-   *
-   * Reason:
-   * - Zero AI value
-   * - High noise / security risk
+   * A set of directory names that are unconditionally hidden from the scan.
+   * These directories typically contain dependencies, build outputs, or logs 
+   * that provide no semantic value for AI analysis.
    */
   private static readonly ABSOLUTE_HIDDEN_DIRS = new Set([
     '.git',
@@ -58,12 +52,8 @@ export class IgnoreResolver {
   ]);
 
   /**
-   * ALWAYS VISIBLE FILES
-   * Even if ignored by git.
-   *
-   * Reason:
-   * - Config / documentation
-   * - Useful for AI context
+   * A set of filenames that remain visible even if ignored by version control.
+   * These files usually contain critical configuration or documentation useful for AI context.
    */
   private static readonly ALWAYS_VISIBLE_FILES = new Set([
     '.gitignore',
@@ -74,12 +64,8 @@ export class IgnoreResolver {
   ]);
 
   /**
-   * SENSITIVE FILE PATTERNS
-   * Must never be auto-selected.
-   *
-   * Reason:
-   * - Security
-   * - AI does not need secrets
+   * Regular expressions matching sensitive file patterns that must never be auto-selected.
+   * This ensures secrets and credentials are not accidentally exposed.
    */
   private static readonly SENSITIVE_PATTERNS: RegExp[] = [
     /^\.env($|\.)/,
@@ -89,6 +75,10 @@ export class IgnoreResolver {
     /id_ed25519/
   ];
 
+  /**
+   * Creates an instance of IgnoreResolver.
+   * * @param options - The configuration options for the resolver.
+   */
   constructor(options: IgnoreOptions) {
     this.rootPath = this.normalize(options.rootPath);
     this.excludeSensitive = options.excludeSensitive;
@@ -99,29 +89,27 @@ export class IgnoreResolver {
   }
 
   /**
-   * Decide whether a path should be hidden from tree.
+   * Determines whether a specific file path should be ignored based on the established rules.
+   * * The evaluation follows this precedence:
+   * 1. **Absolute Hidden:** Checks against the hardcoded list of noisy directories.
+   * 2. **Always Visible:** Allow-lists specific configuration files.
+   * 3. **Sensitive:** Checks against security patterns (if enabled).
+   * 4. **Git Ignore:** Checks against the .gitignore rules (if loaded).
+   * * @param filePath - The absolute path of the file or directory to check.
+   * @returns `true` if the file should be ignored; otherwise, `false`.
    */
   shouldIgnore(filePath: string): boolean {
     const normalized = this.normalize(filePath);
     const baseName = path.basename(normalized);
 
-    /**
-     * 1. Absolute hidden directories
-     */
     if (IgnoreResolver.ABSOLUTE_HIDDEN_DIRS.has(baseName)) {
       return true;
     }
 
-    /**
-     * 2. Always-visible files
-     */
     if (IgnoreResolver.ALWAYS_VISIBLE_FILES.has(baseName)) {
       return false;
     }
 
-    /**
-     * 3. Sensitive files
-     */
     if (
       this.excludeSensitive &&
       IgnoreResolver.SENSITIVE_PATTERNS.some(r =>
@@ -131,9 +119,6 @@ export class IgnoreResolver {
       return true;
     }
 
-    /**
-     * 4. .gitignore rules (optional)
-     */
     if (this.gitIgnore) {
       const relative = path
         .relative(this.rootPath, normalized)
@@ -146,10 +131,6 @@ export class IgnoreResolver {
 
     return false;
   }
-
-  // =========================
-  // Internal helpers
-  // =========================
 
   private loadGitIgnore(): void {
     const gitignorePath = path.join(

@@ -2,48 +2,47 @@
 
 ## "mager-project-copier"
 
-This project uses **esbuild** for fast compilation and **ESLint** for code quality.
+**Mager Project Copier** is a powerful tool to generate AI-ready project snapshots. This project uses **esbuild** for fast compilation and **ESLint** for code quality.
 
-## Folder Structure
+## Folder Structure (Modular)
 
 * `src/`: Contains the source code.
-    * `src/extension.ts`: The entry point.
-    * `src/sidebar/`: UI logic for the Webview/Sidebar.
-    * `src/core/`: Core logic (File scanning, Token estimation, Snapshot building).
-* `package.json`: Manifest file defining the extension and scripts.
+    * `src/extension.ts`: The entry point (activates Sidebar & Context Menu).
+    * `src/sidebar/`: UI & Interaction logic.
+        * `src/sidebar/SidebarProvider.ts`: Main controller.
+        * `src/sidebar/view/htmlRenderer.ts`: HTML template for the WebView.
+        * `src/sidebar/handlers/`: Logic for specific actions (copy, scan).
+    * `src/core/`: Core business logic.
+        * `fileScanner.ts`: Recursive file scanning with size limits.
+        * `updateManager.ts`: Self-hosted auto-update logic via GitHub.
+        * `templateManager.ts`: Prompt template management.
+        * `snapshotBuilder.ts`: Markdown/XML output generator.
+    * `src/utils/`: Helper functions (Git, FS, Semver).
+    * `src/data/`: Static constants (AI Models list).
+* `package.json`: Manifest file defining the extension, commands, and configuration.
 
-## Get Started
+## Features & Usage
 
-1.  **Install dependencies**:
-    ```bash
-    npm install
-    ```
+### 1. Sidebar Panel
+* **Scan All**: Scans the entire workspace respecting `.gitignore`.
+* **Scan Git**: Scans only modified or untracked files (useful for code reviews).
+* **Templates**: Select from built-in prompts (Code Review, Bug Fix) or create your own.
+* **Search**: Filter the file tree instantly using the search bar.
 
-2.  **Run the extension**:
-    * Press `F5` in VS Code.
-    * This will start the `watch` task (which runs `esbuild --watch` and `tsc --watch`) and open a new window with your extension loaded.
+### 2. Context Menu (Quick Copy)
+* Right-click on any folder in the VS Code Explorer.
+* Select **"Copy Snapshot (Mager Project)"**.
+* The folder content is copied to your clipboard immediately.
 
-3.  **Test the functionality**:
-    * Open the newly opened VS Code window.
-    * Open a folder/workspace.
-    * Click on the **Mager Project** icon in the Activity Bar.
-    * Verify that the file tree loads and the "Copy" button works.
+### 3. Configuration (Custom Templates)
+You can add your own prompts in `settings.json`:
 
-## Scripts
-
-* `npm run compile`: Compiles the extension (runs type checking, linting, and esbuild).
-* `npm run watch`: Watches for changes and rebuilds automatically (for development).
-* `npm run package`: Prepares the extension for production (minified build).
-* `npm run test`: Runs the test suite.
-* `npm run lint`: Runs ESLint to check for code style issues.
-
-## Debugging
-
-* Open `src/extension.ts`.
-* Add breakpoints.
-* Press `F5` to start debugging.
-* Check the **Debug Console** for output.
-
-## Changes
-
-* If you change `package.json` (e.g., adding commands or views), you may need to reload the Extension Development Host window (`Ctrl+R` or `Cmd+R`).
+```json
+"magerProject.customTemplates": [
+  {
+    "id": "my-custom",
+    "label": "My Custom Prompt",
+    "description": "My personal prompt style",
+    "prompt": "Review this code for performance:\n\n{context}"
+  }
+]

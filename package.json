@@ -1,8 +1,14 @@
 {
   "name": "mager-project-copier",
-  "displayName": "mager-project",
+  "displayName": "Mager Project",
   "description": "Copy whole project into one AI-ready snapshot",
-  "version": "0.0.1",
+  "version": "0.0.2",
+  "publisher": "yoganataa",
+  "icon": "media/icon.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yoganataa/mager-project-copier"
+  },
   "engines": {
     "vscode": "^1.107.0"
   },
@@ -14,6 +20,57 @@
   ],
   "main": "./dist/extension.js",
   "contributes": {
+    "configuration": {
+      "title": "Mager Project",
+      "properties": {
+        "magerProject.customTemplates": {
+          "type": "array",
+          "default": [],
+          "description": "Define your own custom prompt templates.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "Unique ID (e.g., 'my-review')"
+              },
+              "label": {
+                "type": "string",
+                "description": "Display name in dropdown"
+              },
+              "description": {
+                "type": "string",
+                "description": "Tooltip description"
+              },
+              "prompt": {
+                "type": "string",
+                "description": "Prompt content. Use {context} as placeholder.",
+                "editPresentation": "multiline"
+              }
+            }
+          }
+        }
+      }
+    },
+    "commands": [
+      {
+        "command": "magerProject.quickCopy",
+        "title": "Copy Snapshot (Mager Project)"
+      },
+      {
+        "command": "magerProject.checkUpdate",
+        "title": "Check for Updates (Mager Project)"
+      }
+    ],
+    "menus": {
+      "explorer/context": [
+        {
+          "command": "magerProject.quickCopy",
+          "group": "7_modification",
+          "when": "explorerResourceIsFolder"
+        }
+      ]
+    },
     "viewsContainers": {
       "activitybar": [
         {
