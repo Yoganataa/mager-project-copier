@@ -10,8 +10,8 @@ export type UIState = {
   useGitIgnore: boolean;
   /** Indicates whether sensitive files are currently excluded from the view. */
   excludeSensitive: boolean;
-  /** The identifier of the currently selected AI model. */
-  selectedModel: string;
+  /** The identifier of the currently selected output format. */
+  selectedFormat: 'markdown' | 'xml';
   /** The identifier of the currently selected prompt template. */
   selectedTemplate: string;
 };
@@ -20,7 +20,7 @@ const STORAGE_KEY = 'magerProject.uiState';
 
 /**
  * Loads the UI state from the workspace storage.
- * * If no saved state is found, it initializes with default values favoring modern standards.
+ * * If no saved state is found, it initializes with default values.
  *
  * @param context - The extension context used to access the global state storage.
  * @returns The current {@link UIState} object.
@@ -32,7 +32,7 @@ export function loadUIState(
     context.workspaceState.get<UIState>(STORAGE_KEY) ?? {
       useGitIgnore: true,
       excludeSensitive: true,
-      selectedModel: 'gpt-5.2',
+      selectedFormat: 'markdown',
       selectedTemplate: 'default'
     }
   );

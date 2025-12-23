@@ -11,14 +11,7 @@ import { readTextFile } from '../utils/fs';
 export type SnapshotFormat = 'markdown' | 'xml';
 
 /**
- * Generates a consolidated snapshot of the selected project files, formatted for AI consumption.
- * * This function supports two major output formats:
- * - **Markdown:** Standard format suitable for GPT and Gemini models.
- * - **XML:** Structured format optimized for Claude.
- *
- * @param root - The root node of the project tree.
- * @param format - The desired output format ('markdown' or 'xml'). Defaults to 'markdown'.
- * @returns A promise that resolves to the generated snapshot string.
+ * Generates a consolidated snapshot of the selected project files.
  */
 export async function buildSnapshot(
   root: ProjectNode,
@@ -30,9 +23,8 @@ export async function buildSnapshot(
   if (format === 'xml') {
     let output = '<documents>\n';
     
-    const structure = files
-      .map(f => path.relative(root.path, f.path))
-      .join('\n');
+    // Reuse the path tree logic for the structure document
+    const structure = buildPathTree(root);
     
     output += `  <document index="1">\n`;
     output += `    <source>project_structure.txt</source>\n`;
@@ -57,10 +49,8 @@ export async function buildSnapshot(
     return output;
   }
 
-  const structure = files
-    .map(f => path.relative(root.path, f.path))
-    .join('\n');
-
+  // Markdown format
+  const structure = buildPathTree(root);
   let output = `# Project Structure\n${structure}\n\n---\n`;
 
   for (const file of files) {
@@ -79,10 +69,49 @@ export async function buildSnapshot(
 }
 
 /**
- * Recursively collects all checked files from the project tree.
- * * @param node - The current project node being traversed.
- * @param acc - The accumulator array where selected file nodes are stored.
+ * Generates a flat list of relative file paths.
  */
+export function buildPathTree(root: ProjectNode): string {
+    const files: ProjectNode[] = [];
+    collectCheckedFiles(root, files);
+    return files.map(f => path.relative(root.path, f.path).replace(/\\/g, '/')).join('\n');
+}
+
+/**
+ * Generates a visual ASCII tree structure (e.g., ├── src/).
+ */
+export function buildAsciiTree(root: ProjectNode): string {
+    let output = `${root.name}/\n`;
+    
+    // Helper to recursively build tree
+    const traverse = (node: ProjectNode, prefix: string, isLast: boolean) => {
+        if (!node.children) {return;}
+
+        // Filter only checked children or directories that contain checked children
+        const visibleChildren = node.children.filter(child => {
+            if (child.type === 'file') {return child.checked;}
+            return hasCheckedDescendant(child);
+        });
+
+        visibleChildren.forEach((child, index) => {
+            const isChildLast = index === visibleChildren.length - 1;
+            const connector = isChildLast ? '└── ' : '├── ';
+            
+            output += `${prefix}${connector}${child.name}${child.type === 'directory' ? '/' : ''}\n`;
+            
+            if (child.type === 'directory') {
+                const childPrefix = prefix + (isChildLast ? '    ' : '│   ');
+                traverse(child, childPrefix, isChildLast);
+            }
+        });
+    };
+
+    traverse(root, '', true);
+    return output;
+}
+
+// --- Helpers ---
+
 function collectCheckedFiles(
   node: ProjectNode,
   acc: ProjectNode[]
@@ -94,4 +123,9 @@ function collectCheckedFiles(
   node.children?.forEach(child =>
     collectCheckedFiles(child, acc)
   );
+}
+
+function hasCheckedDescendant(node: ProjectNode): boolean {
+    if (node.type === 'file') {return node.checked;}
+    return node.children?.some(child => hasCheckedDescendant(child)) ?? false;
 }

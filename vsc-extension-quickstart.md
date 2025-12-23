@@ -9,16 +9,16 @@
 * `src/`: Contains the source code.
     * `src/extension.ts`: The entry point (activates Sidebar & Context Menu).
     * `src/sidebar/`: UI & Interaction logic.
-        * `src/sidebar/SidebarProvider.ts`: Main controller.
-        * `src/sidebar/view/htmlRenderer.ts`: HTML template for the WebView.
-        * `src/sidebar/handlers/`: Logic for specific actions (copy, scan).
+        * `src/sidebar/SidebarProvider.ts`: Main controller (Message passing).
+        * `src/sidebar/view/htmlRenderer.ts`: HTML template with embedded JS/CSS for the Webview.
+        * `src/sidebar/handlers/`: Logic for specific actions (copy, copy-tree, scan).
     * `src/core/`: Core business logic.
         * `fileScanner.ts`: Recursive file scanning with size limits.
         * `updateManager.ts`: Self-hosted auto-update logic via GitHub.
         * `templateManager.ts`: Prompt template management.
-        * `snapshotBuilder.ts`: Markdown/XML output generator.
+        * `snapshotBuilder.ts`: Markdown/XML output generator & Tree builder.
     * `src/utils/`: Helper functions (Git, FS, Semver).
-    * `src/data/`: Static constants (AI Models list).
+    * `src/data/`: Static constants (Output Formats).
 * `package.json`: Manifest file defining the extension, commands, and configuration.
 
 ## Features & Usage
@@ -26,8 +26,9 @@
 ### 1. Sidebar Panel
 * **Scan All**: Scans the entire workspace respecting `.gitignore`.
 * **Scan Git**: Scans only modified or untracked files (useful for code reviews).
-* **Templates**: Select from built-in prompts (Code Review, Bug Fix) or create your own.
-* **Search**: Filter the file tree instantly using the search bar.
+* **Copy Tree**: Generates a lightweight structure-only snapshot (ASCII or Path List).
+* **Keyboard Nav**: Full accessibility support for navigating the tree view.
+* **Search**: Filter the file tree with visual highlighting.
 
 ### 2. Context Menu (Quick Copy)
 * Right-click on any folder in the VS Code Explorer.

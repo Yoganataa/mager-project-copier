@@ -4,6 +4,23 @@ All notable changes to the "mager-project-copier" extension will be documented i
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
+## [0.0.3] - 2025-12-23
+
+### Added
+- **Keyboard Navigation (UX)**: Full keyboard support for the file tree.
+    - `Arrow Up/Down`: Navigate between rows.
+    - `Arrow Right`: Expand folder or move to child.
+    - `Arrow Left`: Collapse folder or move to parent.
+    - `Space`: Toggle checkbox selection.
+    - `Enter`: Open file or toggle folder.
+- **Copy Tree Only**: New feature to copy only the project structure without file contents. Supports **ASCII Tree** (visual) and **Path List** (text) formats.
+- **Search Highlighting**: Search results now highlight the matching text specifically, improving visibility.
+
+### Changed
+- **Output Format Selection**: Replaced specific "Target AI Model" selection with generic **Output Format** selection (**Markdown** vs **XML**).
+- **UI Layout**: Updated sidebar action buttons to a 3-column grid to accommodate the new "Copy Tree" button.
+- **Accessibility**: Added `tabindex` and focus styles to file tree rows for better accessibility.
+
 ## [0.0.2] - 2025-12-18
 
 ### Added
@@ -12,7 +29,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 - **Context Menu**: Added "Copy Snapshot" option to the Explorer context menu for quick folder copying.
 - **Custom Templates**: Users can now define custom prompt templates via VS Code `settings.json`.
 - **Search Bar**: Added real-time search filtering in the sidebar file tree.
-- **Dynamic Output**: Automatically switches between Markdown and XML format based on the selected AI Model (e.g., XML for Claude).
+- **Dynamic Output**: Automatically switches between Markdown and XML format.
 - **Performance Safety**: Added auto-ignore logic for files larger than 1MB to prevent freezing.
 
 ### Changed

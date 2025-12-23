@@ -20,15 +20,10 @@ export interface Template {
    * Constructs the final prompt by combining the project context with specific instructions.
    *
    * @param context - The raw project snapshot containing structure and code.
-   * @param modelId - The identifier of the selected AI model (used for optimization).
    * @returns The fully formatted prompt string.
    */
-  build: (context: string, modelId: string) => string;
+  build: (context: string) => string;
 }
-
-// Helper: Detect model family for optimization
-const isClaude = (id: string) => id.includes('claude');
-const isGemini = (id: string) => id.includes('gemini');
 
 /**
  * Collection of hardcoded, built-in templates.
@@ -38,18 +33,13 @@ const BUILT_IN_TEMPLATES: Template[] = [
     id: 'default',
     label: 'Standard Context (Raw)',
     description: 'Copies code and structure without additional instructions.',
-    build: (context, _) => context
+    build: (context) => context
   },
   {
     id: 'review',
     label: 'Code Review & Best Practices',
     description: 'Deep analysis of code quality, clean code, and performance.',
-    build: (context, modelId) => {
-      const thinkingInstruction = isClaude(modelId) || isGemini(modelId)
-        ? '\nBefore answering, please think step-by-step inside <thinking> tags about the architecture and potential bottlenecks.\n'
-        : '';
-
-      return `
+    build: (context) => `
 You are an expert Principal Software Engineer. I have provided the project structure and source code below.
 Your task is to perform a comprehensive Code Review.
 
@@ -59,20 +49,18 @@ Your task is to perform a comprehensive Code Review.
 3. **Safety**: Spot potential bugs or race conditions.
 4. **Modern Practices**: Suggest modern alternatives to outdated patterns used here.
 
-${thinkingInstruction}
 # Project Context:
 ${context}
 
 # Instructions:
 Provide your review in a structured format with priority levels (High/Medium/Low) for each suggestion.
-`.trim();
-    }
+`.trim()
   },
   {
     id: 'bugfix',
     label: 'Find Bugs & Error Handling',
     description: 'Scans for logical bugs, edge cases, and poor error handling.',
-    build: (context, modelId) => `
+    build: (context) => `
 You are an expert Debugger and QA Engineer. Analyze the following project code specifically for BUGS and LOGICAL ERRORS.
 
 # Look for:
@@ -80,8 +68,6 @@ You are an expert Debugger and QA Engineer. Analyze the following project code s
 - Race conditions or async/await mistakes.
 - Memory leaks or resource management issues.
 - Logic errors that deviate from standard patterns.
-
-${isClaude(modelId) ? 'Please analyze the data flow inside <thinking> tags first.' : ''}
 
 # Project Context:
 ${context}
@@ -94,7 +80,7 @@ List the detected issues. For each issue, explain *why* it is a bug and provide 
     id: 'explain',
     label: 'Explain Architecture',
     description: 'Explains workflow, folder structure, and project goals.',
-    build: (context, _) => `
+    build: (context) => `
 You are a Technical Lead onboarding a new developer.
 Read the following project structure and code.
 
@@ -111,7 +97,7 @@ ${context}
     id: 'security',
     label: 'Security Audit',
     description: 'Checks for vulnerabilities (XSS, Injection, Secrets, etc.).',
-    build: (context, _) => `
+    build: (context) => `
 You are a Cybersecurity Expert. Perform a Security Audit on the provided code.
 
 # Audit Checklist:
@@ -131,7 +117,7 @@ Provide a security report listing vulnerabilities by severity (Critical/High/Med
     id: 'refactor',
     label: 'Refactoring Suggestions',
     description: 'Suggestions to improve maintainability and structure.',
-    build: (context, _) => `
+    build: (context) => `
 You are a Refactoring Specialist. I want to improve the maintainability of this code.
 
 # Task:
@@ -158,7 +144,7 @@ export function getTemplates(): Template[] {
     id: t.id || 'custom-' + Math.random().toString(36).substr(2, 9),
     label: t.label || 'Custom Template',
     description: t.description || 'User defined template',
-    build: (context: string, _modelId: string) => {
+    build: (context: string) => {
       let raw = t.prompt || '{context}';
       return raw.replace('{context}', context);
     }
@@ -173,15 +159,13 @@ export function getTemplates(): Template[] {
  *
  * @param snapshot - The project content to be wrapped.
  * @param templateId - The ID of the template to apply.
- * @param modelId - The ID of the target AI model (for context-aware optimizations).
  * @returns The fully constructed prompt string.
  */
 export function applyTemplate(
   snapshot: string,
-  templateId: string,
-  modelId: string
+  templateId: string
 ): string {
   const allTemplates = getTemplates();
   const template = allTemplates.find(t => t.id === templateId) ?? allTemplates[0];
-  return template.build(snapshot, modelId);
+  return template.build(snapshot);
 }
