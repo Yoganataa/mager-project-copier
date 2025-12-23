@@ -35,26 +35,25 @@ jobs:
         run: |
           if git rev-parse "v${VERSION}" >/dev/null 2>&1; then
             echo "exists=true" >> $GITHUB_OUTPUT
-            echo "Tag already exists. Release skipped."
+            echo "Tag v${VERSION} already exists. Skipping release."
           else
             echo "exists=false" >> $GITHUB_OUTPUT
-            echo "Tag does not exist. Continue."
+            echo "Tag v${VERSION} does not exist. Proceeding."
           fi
 
       - name: Extract changelog for version
         if: steps.tag-check.outputs.exists == 'false'
         run: |
-          VERSION="${VERSION}"
           OUTPUT_FILE="release-notes.md"
 
-          if ! grep -q "^## \\[$VERSION\\]" CHANGELOG.md; then
-            echo "## v$VERSION" > "$OUTPUT_FILE"
+          if ! grep -q "^## \[${VERSION}\]" CHANGELOG.md; then
+            echo "## v${VERSION}" > "$OUTPUT_FILE"
             echo "" >> "$OUTPUT_FILE"
             echo "_No changelog entry found for this version._" >> "$OUTPUT_FILE"
           else
             awk -v ver="$VERSION" '
               $0 ~ "^## \\[" ver "\\]" {flag=1; next}
-              /^## \\[/ && flag {exit}
+              /^## \[/ && flag {exit}
               flag {print}
             ' CHANGELOG.md > "$OUTPUT_FILE"
           fi
