@@ -2,7 +2,7 @@
   "name": "mager-project-copier",
   "displayName": "Mager Project",
   "description": "Copy whole project into one AI-ready snapshot",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "publisher": "yoganataa",
   "icon": "assets/icons/icon.png",
   "repository": {
@@ -23,6 +23,11 @@
     "configuration": {
       "title": "Mager Project",
       "properties": {
+        "magerProject.tokenLimit": {
+          "type": "number",
+          "default": 200000,
+          "description": "Token warning threshold. If the snapshot exceeds this limit, a warning will be shown before copying."
+        },
         "magerProject.customTemplates": {
           "type": "array",
           "default": [],

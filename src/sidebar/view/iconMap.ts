@@ -1,8 +1,10 @@
 // src/sidebar/view/iconMap.ts
 
 /**
- * Mapping Extension -> SVG Filename (tanpa .svg)
- * Berdasarkan daftar aset VS Code Material Icon Theme.
+ * Maps file extensions to specific SVG icon filenames.
+ * * This mapping is based on the VS Code Material Icon Theme naming convention.
+ * * Keys represent the file extension (without the dot), and values represent the
+ * corresponding SVG filename (without the extension).
  */
 export const FILE_ICON_MAP: Record<string, string> = {
     // --- Generic / Common ---
@@ -92,7 +94,7 @@ export const FILE_ICON_MAP: Record<string, string> = {
     'babelrc': 'file_type_babel',
     'toml': 'file_type_toml',
     'ini': 'file_type_ini',
-    'conf': 'file_type_config', // Digunakan untuk config umum (nginx dihapus dari sini)
+    'conf': 'file_type_config', 
     'config': 'file_type_config',
     'lock': 'file_type_lock',
     
@@ -134,8 +136,8 @@ export const FILE_ICON_MAP: Record<string, string> = {
 };
 
 /**
- * Mapping Nama File Spesifik (Exact Match)
- * Prioritas lebih tinggi daripada ekstensi.
+ * Maps specific filenames (exact match) to their corresponding icon names.
+ * * This mapping takes precedence over the extension-based mapping (e.g., `package.json` vs `.json`).
  */
 export const EXACT_FILE_MAP: Record<string, string> = {
     'package.json': 'file_type_npm',
@@ -183,7 +185,9 @@ export const EXACT_FILE_MAP: Record<string, string> = {
 };
 
 /**
- * Mapping Folder Khusus (jika di masa depan ingin dipakai untuk logika lain)
+ * Maps folder names to specific icon assets.
+ * * Used for folder-specific icons (e.g., `node_modules`, `src`, `test`) to improve
+ * visual navigation within the tree view.
  */
 export const FOLDER_ICON_MAP: Record<string, string> = {
     'src': 'folder_type_src',

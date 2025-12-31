@@ -8,19 +8,13 @@ import { UIState } from '../../core/uiState';
 import { ProjectNode } from '../../types';
 
 /**
- * Handles the workspace scanning action triggered from the sidebar.
- *
- * This function performs the following operations:
- * 1. Scans the workspace based on current UI settings (ignoring sensitive/git-ignored files).
- * 2. Notifies the user if any files were skipped due to size limitations (>1MB).
- * 3. Applies a filter if the scan mode is set to 'git' (showing only changed files).
- * 4. Restores previous selection state if performing a standard scan.
- * 5. Persists the current selection state.
- *
- * @param context - The extension context for state persistence.
- * @param uiState - The current UI configuration (ignore rules, etc.).
- * @param mode - The scan mode: 'all' for a full scan, or 'git' for changed files only.
- * @returns A promise that resolves to the root {@link ProjectNode} of the scanned tree, or null if no workspace is found.
+ * Orchestrates the workspace scanning process initiated from the sidebar interface.
+ * * This function handles the retrieval of the file structure, applies Git-based filtering if requested,
+ * and manages the persistence of user file selections.
+ * * @param context - The extension context used to access persistent storage for selection restoration.
+ * @param uiState - The current UI configuration defining scan rules (e.g., .gitignore usage).
+ * @param mode - The scanning mode: 'all' for a standard scan, or 'git' to filter for modified files.
+ * @returns A promise resolving to the root {@link ProjectNode} of the scanned tree, or `null` if no workspace is found.
  */
 export async function handleScanAction(
   context: vscode.ExtensionContext,
@@ -28,7 +22,7 @@ export async function handleScanAction(
   mode: 'all' | 'git'
 ): Promise<ProjectNode | null> {
   
-  const { root, skippedFiles } = await scanWorkspace({
+  const { root } = await scanWorkspace({
     useGitIgnore: uiState.useGitIgnore,
     excludeSensitive: uiState.excludeSensitive
   });
@@ -36,15 +30,6 @@ export async function handleScanAction(
   if (!root) {
     vscode.window.showWarningMessage('Mager Project: No workspace detected.');
     return null;
-  }
-
-  if (skippedFiles.length > 0) {
-    const preview = skippedFiles.slice(0, 3).join(', ');
-    const suffix = skippedFiles.length > 3 ? `...and ${skippedFiles.length - 3} more` : '';
-    
-    vscode.window.showWarningMessage(
-      `Mager Project: ${skippedFiles.length} large files (>1MB) were ignored: ${preview}${suffix}`
-    );
   }
 
   if (mode === 'git') {

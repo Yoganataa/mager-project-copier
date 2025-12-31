@@ -4,6 +4,21 @@ All notable changes to the "mager-project-copier" extension will be documented i
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
+## [0.0.4] - 2025-12-31
+
+### Added
+- **Modular Framework Detection**: Massive update to the detection engine. Now supports 25+ frameworks including **Next.js, Nuxt, SvelteKit, Astro, Remix, Flutter, React Native, Django, Spring Boot, Unity**, and more.
+- **Smart Placeholders**: Binary files (images, archives) and large files (>1MB) are now visible in the tree with a specific label (e.g., `[Binary]`, `[Large]`). Their content is skipped in the snapshot to save tokens, but their existence is recorded for context.
+- **Reset Selection**: Added a "Trash Icon" button in the footer to instantly uncheck all files.
+- **Configurable Token Limit**: Users can now set their own warning threshold via `magerProject.tokenLimit` in VS Code settings.
+- **Loading Indicators**: Visual feedback (button disabled + text change) during Copy/Export operations.
+
+### Changed
+- **Auto-Scan**: The extension now automatically scans the workspace upon opening, eliminating the empty initial state.
+- **Search Performance**: Added **Debounce (300ms)** to the search bar to prevent UI lag on large projects.
+- **Internal Architecture**: Refactored `htmlRenderer.ts` into modular components (`styles`, `scripts`, `components`) for better maintainability.
+- **Framework Logic**: Moved hardcoded framework rules into a dedicated `frameworks.ts` definition file.
+
 ## [0.0.3] - 2025-12-23
 
 ### Added

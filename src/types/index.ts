@@ -1,30 +1,45 @@
 // src/types/index.ts
 
 /**
- * Represents a node in the project's file system hierarchy.
- * * This interface is used to construct the interactive tree view in the sidebar
- * and track the selection state of files and directories.
+ * Represents a single node within the hierarchical project structure.
+ * * This interface maps directly to a file or directory in the user's filesystem
+ * and serves as the core data model for the interactive sidebar tree view.
  */
 export interface ProjectNode {
-  /** The absolute file system path of the node. */
+  /**
+   * The absolute filesystem path of the node.
+   * Used as the unique identifier for file operations and Git filtering.
+   */
   path: string;
 
-  /** The name of the file or directory (e.g., 'index.ts', 'src'). */
+  /**
+   * The display name of the file or directory (e.g., `index.ts`, `src`).
+   */
   name: string;
 
-  /** The type of the node, distinguishing between files and directories. */
+  /**
+   * Categorizes the node as either a file or a directory.
+   */
   type: 'file' | 'directory';
 
   /**
-   * Indicates whether the node is currently selected (checked) in the UI.
-   * * For directories, a checked state typically implies that its contents
-   * are partially or fully selected, depending on the implementation logic.
+   * The current selection state of the node in the UI.
+   * * `true`: The node is selected for inclusion in the snapshot.
+   * * `false`: The node is excluded.
    */
   checked: boolean;
 
   /**
-   * An array of child nodes, if the current node is a directory.
-   * * This property is undefined for nodes of type 'file'.
+   * An optional array of child nodes.
+   * This property is only present if the node `type` is `'directory'`.
    */
   children?: ProjectNode[];
+
+  /**
+   * Optional metadata providing context on why a file's content might be skipped.
+   * * Examples: `'Binary'`, `'Large (>1MB)'`.
+   * * If defined, the file appears in the tree structure, but its content is 
+   * excluded from the generated snapshot to conserve tokens.
+   */
+  meta?: string;
 }

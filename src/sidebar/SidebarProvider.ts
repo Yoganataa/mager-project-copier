@@ -1,6 +1,6 @@
 // src/sidebar/SidebarProvider.ts
 import * as vscode from 'vscode';
-import { updateNodeCheckState } from '../core/treeUtils';
+import { updateNodeCheckState, setAllChecked } from '../core/treeUtils';
 import { saveSelection } from '../core/selectionStore';
 import { detectFramework } from '../core/frameworkDetector';
 import { applyPreset } from '../core/presetRules';
@@ -12,12 +12,18 @@ import { getWebviewContent } from './view/htmlRenderer';
 import { handleCopyAction, handleCopyTreeAction } from './handlers/copyHandler';
 import { handleScanAction } from './handlers/scanHandler';
 
-/** Storage key for caching the project tree structure in the workspace state. */
+/** * Storage key used to cache the project tree structure in the workspace state. 
+ * This allows the tree to be instantly restored when VS Code is reloaded.
+ */
 const TREE_CACHE_KEY = 'magerProject.cachedTree';
 
 /**
  * The primary WebviewViewProvider for the "Mager Project" extension.
- * Manages UI state, data persistence, and communication between the Sidebar and Extension Host.
+ * * This class acts as the controller for the sidebar interface. It is responsible for:
+ * - Managing the lifecycle of the WebView.
+ * - Handling message passing (commands) between the WebView and the Extension Host.
+ * - Persisting UI state and cached tree data.
+ * - Orchestrating core actions like scanning, copying, and exporting.
  */
 export class SidebarProvider implements vscode.WebviewViewProvider {
   public static readonly viewType = 'magerProject.sidebar';
@@ -26,12 +32,15 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
   private uiState: UIState;
   private _view?: vscode.WebviewView;
 
-  /** Registry of supported commands used for message passing. */
+  /** * A registry of supported command identifiers used for message passing protocol 
+   * between the frontend (WebView) and backend (Extension Host).
+   */
   private static readonly COMMANDS = {
     WEBVIEW_READY: 'webviewReady',
     SCAN: 'scan',
     SCAN_GIT: 'scanGit',
     TOGGLE_NODE: 'toggle',
+    UNCHECK_ALL: 'uncheckAll',
     PRESET: 'preset',
     COPY: 'copy',
     COPY_TREE: 'copyTree',
@@ -39,17 +48,27 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
     OPEN: 'open',
     TOGGLE_GITIGNORE: 'toggleGitIgnore',
     TOGGLE_SENSITIVE: 'toggleSensitive',
-    CHANGE_FORMAT: 'changeFormat', // Updated from CHANGE_MODEL
+    CHANGE_FORMAT: 'changeFormat',
     CHANGE_TEMPLATE: 'changeTemplate',
     TREE: 'tree',
-    UI_STATE: 'uiState'
+    UI_STATE: 'uiState',
+    ACTION_COMPLETE: 'actionComplete'
   } as const;
 
+  /**
+   * Initializes a new instance of the SidebarProvider.
+   * * @param context - The extension context provided by VS Code, used for state persistence and resource URI resolution.
+   */
   constructor(private readonly context: vscode.ExtensionContext) {
     this.uiState = loadUIState(context);
     this.treeData = this.context.workspaceState.get<ProjectNode>(TREE_CACHE_KEY) || null;
   }
 
+  /**
+   * Called when the view is first detected by VS Code.
+   * Sets up the HTML content, configures security options, and establishes the message listener.
+   * * @param view - The WebviewView instance being resolved.
+   */
   resolveWebviewView(view: vscode.WebviewView): void {
     this._view = view;
 
@@ -71,12 +90,22 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
       switch (message.command) {
         
         case SidebarProvider.COMMANDS.WEBVIEW_READY:
+          // 1. Send the persisted UI state to the frontend immediately.
           view.webview.postMessage({
             command: SidebarProvider.COMMANDS.UI_STATE,
             payload: this.uiState
           });
+
+          // 2. Check for cached tree data.
           if (this.treeData) {
+              // Instant Load: Restore the tree from cache (e.g., after a window reload).
               this.broadcastTree();
+          } else {
+              // Auto-Scan: If cache is empty, perform an initial scan.
+              this.treeData = await handleScanAction(this.context, this.uiState, 'all');
+              this.saveTreeCache();
+              this.broadcastTree();
+              view.webview.postMessage({ command: SidebarProvider.COMMANDS.ACTION_COMPLETE });
           }
           break;
 
@@ -84,16 +113,26 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
           this.treeData = await handleScanAction(this.context, this.uiState, 'all');
           this.saveTreeCache();
           this.broadcastTree();
+          view.webview.postMessage({ command: SidebarProvider.COMMANDS.ACTION_COMPLETE });
           break;
 
         case SidebarProvider.COMMANDS.SCAN_GIT:
           this.treeData = await handleScanAction(this.context, this.uiState, 'git');
           this.saveTreeCache();
           this.broadcastTree();
+          view.webview.postMessage({ command: SidebarProvider.COMMANDS.ACTION_COMPLETE });
           break;
 
         case SidebarProvider.COMMANDS.TOGGLE_NODE:
           await this.handleToggleNode(message);
+          break;
+
+        case SidebarProvider.COMMANDS.UNCHECK_ALL:
+          if (this.treeData) {
+              setAllChecked(this.treeData, false);
+              saveSelection(this.context, this.treeData);
+              this.saveTreeCache();
+          }
           break;
 
         case SidebarProvider.COMMANDS.OPEN:
@@ -109,14 +148,17 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
 
         case SidebarProvider.COMMANDS.COPY:
           await handleCopyAction(this.treeData, this.uiState);
+          view.webview.postMessage({ command: SidebarProvider.COMMANDS.ACTION_COMPLETE });
           break;
 
         case SidebarProvider.COMMANDS.COPY_TREE:
           await handleCopyTreeAction(this.treeData);
+          view.webview.postMessage({ command: SidebarProvider.COMMANDS.ACTION_COMPLETE });
           break;
 
         case SidebarProvider.COMMANDS.EXPORT:
           await this.handleExport();
+          view.webview.postMessage({ command: SidebarProvider.COMMANDS.ACTION_COMPLETE });
           break;
 
         case SidebarProvider.COMMANDS.TOGGLE_GITIGNORE:
@@ -150,30 +192,49 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
     });
   }
 
+  // =========================================================================
   // Internal Helpers
+  // =========================================================================
+
+  /**
+   * Updates the checked state of a specific node based on user interaction in the tree view.
+   * * @param message - The message payload containing the target path and new checked state.
+   */
   private async handleToggleNode(message: any): Promise<void> {
     if (!this.treeData || !message.path) {return;}
+    
     updateNodeCheckState(this.treeData, message.path, Boolean(message.checked));
     
     saveSelection(this.context, this.treeData);
     this.saveTreeCache(); 
-    this.broadcastTree();
   }
 
+  /**
+   * Detects the project framework and applies the corresponding file selection preset.
+   */
   private async handlePreset(): Promise<void> {
     if (!this.treeData) {return;}
+    
     const framework = detectFramework(this.treeData.path);
-    if (framework === 'unknown') {
-      vscode.window.showWarningMessage('Mager Project: Framework not detected.');
+    
+    if (!framework) {
+      vscode.window.showWarningMessage('Mager Project: No supported framework detected.');
       return;
     }
+    
     applyPreset(this.treeData, framework);
+    
     saveSelection(this.context, this.treeData);
     this.saveTreeCache();
-    this.broadcastTree();
-    vscode.window.showInformationMessage(`Mager Project: "${framework}" preset applied.`);
+    
+    this.broadcastTree(); 
+    
+    vscode.window.showInformationMessage(`Mager Project: Applied preset for "${framework.name}".`);
   }
 
+  /**
+   * Generates a snapshot of the project and saves it to a file location selected by the user.
+   */
   private async handleExport(): Promise<void> {
     if (!this.treeData) {return;}
     const snapshot = await buildSnapshot(this.treeData, this.uiState.selectedFormat || 'markdown'); 
@@ -193,6 +254,9 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
     }
   }
 
+  /**
+   * Sends the current tree data to the WebView to update the UI.
+   */
   private broadcastTree(): void {
     if (this._view && this.treeData) {
         this._view.webview.postMessage({ 
@@ -202,10 +266,16 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
     }
   }
 
+  /**
+   * Saves the current UI state to the workspace storage.
+   */
   private persistState(): void {
       saveUIState(this.context, this.uiState);
   }
 
+  /**
+   * Caches the current project tree structure to the workspace storage.
+   */
   private saveTreeCache(): void {
       if (this.treeData) {
           this.context.workspaceState.update(TREE_CACHE_KEY, this.treeData);
