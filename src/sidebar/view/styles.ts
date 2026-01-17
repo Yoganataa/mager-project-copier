@@ -1,17 +1,23 @@
 // src/sidebar/view/styles.ts
 
 export function getStyles(): string {
-  return `
+    return `
   <style>
     :root { --indent-guide-color: var(--vscode-tree-indentGuidesStroke); }
     
-    /* PENTING: Padding bottom diperbesar (95px) agar konten scroll tidak tertutup tombol fixed */
+    /* RESET BODY untuk Flex Layout */
     body { 
         font-family: var(--vscode-font-family); 
-        padding: 10px; 
-        padding-bottom: 95px; 
+        padding: 0; /* Padding dipindah ke child elements */
+        margin: 0;
         color: var(--vscode-foreground); 
         font-size: 13px; 
+        
+        /* Kunci layout */
+        height: 100vh;
+        overflow: hidden; /* Matikan scroll body */
+        display: flex;
+        flex-direction: column;
     }
     
     .hidden { display: none !important; }
@@ -34,6 +40,11 @@ export function getStyles(): string {
         border-radius: 3px;
     }
 
+    .warning-text {
+        color: var(--vscode-errorForeground);
+        font-weight: bold;
+    }
+
     /* Toolbar */
     .toolbar { display: flex; gap: 4px; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--vscode-widget-border); }
     .icon-btn { flex: 1; display: flex; align-items: center; justify-content: center; height: 28px; background: var(--vscode-toolbar-hoverBackground); color: var(--vscode-icon-foreground); border: 1px solid transparent; border-radius: 4px; cursor: pointer; opacity: 0.8; }
@@ -43,6 +54,27 @@ export function getStyles(): string {
     .icon-btn svg { width: 18px; height: 18px; fill: currentColor; }
     
     #scanGit { color: var(--vscode-gitDecoration-modifiedResourceForeground); }
+
+
+    /* Fixed Header Styles */
+    .fixed-header {
+        flex-shrink: 0; /* Jangan mengecil */
+        padding: 10px 10px 0 10px;
+        background-color: var(--vscode-sideBar-background);
+        border-bottom: 1px solid var(--vscode-widget-border);
+        z-index: 10;
+    }
+
+    .search-wrapper {
+        margin-bottom: 8px;
+    }
+
+    /* Scrollable Content Styles */
+    .scroll-content {
+        flex: 1; /* Ambil sisa ruang vertikal */
+        overflow-y: auto; /* Aktifkan scroll hanya di sini */
+        padding: 0 10px 100px 10px; /* Padding bottom besar agar konten tidak tertutup tombol fixed */
+    }
 
     /* Inputs */
     select, input[type="text"] { width: 100%; margin-bottom: 8px; padding: 4px; background: var(--vscode-dropdown-background); color: var(--vscode-dropdown-foreground); border: 1px solid var(--vscode-dropdown-border); border-radius: 2px; outline: none; }
@@ -76,7 +108,7 @@ export function getStyles(): string {
     .secondary-btn:hover { background: var(--vscode-button-secondaryHoverBackground); }
 
     /* Tree View */
-    #tree { margin-top: 10px; padding-left: 0; }
+    #tree { margin-top: 5px; padding-left: 0; }
     .node-wrapper { display: block; }
     
     /* Row Styles */

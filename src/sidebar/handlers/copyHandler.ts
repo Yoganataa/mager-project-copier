@@ -33,7 +33,7 @@ export async function handleCopyAction(
 
     const format = uiState.selectedFormat || 'markdown';
 
-    const rawSnapshot = await buildSnapshot(treeData, format);
+    const rawSnapshot = await buildSnapshot(treeData, format, uiState.includeProblems);
 
     const finalContent = applyTemplate(
         rawSnapshot,
@@ -62,7 +62,7 @@ export async function handleCopyAction(
             const combined = chunks
                 .map(c => `# Part ${c.index}\n\n${c.content}`)
                 .join('\n\n---\n\n');
-            
+
             await vscode.env.clipboard.writeText(combined);
             vscode.window.showInformationMessage(`Copied split content (${chunks.length} parts).`);
             return;
@@ -70,7 +70,7 @@ export async function handleCopyAction(
     }
 
     await vscode.env.clipboard.writeText(finalContent);
-    
+
     const formatName = (format || 'markdown').toUpperCase();
     vscode.window.showInformationMessage(
         `Copied as ${formatName} (~${estimate.tokens.toLocaleString()} tokens).`

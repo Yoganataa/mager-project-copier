@@ -35,8 +35,6 @@ export type ScanResult = {
 type ScanOptions = {
     /** Whether to parse and respect .gitignore rules. Defaults to true. */
     useGitIgnore?: boolean;
-    /** Whether to exclude common sensitive files (e.g., .env, ID keys). Defaults to true. */
-    excludeSensitive?: boolean;
     /** A specific absolute path to scan. If omitted, scans the first workspace folder. */
     targetPath?: string;
 };
@@ -64,18 +62,16 @@ export async function scanWorkspace(
         return { root: null };
     }
 
-    const { 
-        useGitIgnore = true, 
-        excludeSensitive = true,
-        targetPath = workspaceRoot 
+    const {
+        useGitIgnore = true,
+        targetPath = workspaceRoot
     } = options ?? {};
 
     const ignore = new IgnoreResolver({
-        rootPath: workspaceRoot, 
-        useGitIgnore,
-        excludeSensitive
+        rootPath: workspaceRoot,
+        useGitIgnore
     });
-    
+
     const rootNode = await scanDirectory(targetPath, ignore);
 
     return { root: rootNode };
@@ -117,12 +113,12 @@ async function scanDirectory(
             try {
                 const stat = await vscode.workspace.fs.stat(vscode.Uri.file(fullPath));
                 const ext = path.extname(name).toLowerCase();
-                
+
                 let meta: string | undefined = undefined;
 
                 if (stat.size > MAX_FILE_SIZE) {
                     meta = 'Large (>1MB)';
-                } 
+                }
                 else if (BINARY_EXTENSIONS.has(ext)) {
                     meta = 'Binary';
                 }
@@ -131,7 +127,7 @@ async function scanDirectory(
                     path: fullPath,
                     name,
                     type: 'file',
-                    checked: true, 
+                    checked: true,
                     meta: meta
                 });
             } catch {

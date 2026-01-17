@@ -17,6 +17,7 @@
             * `styles.ts`: CSS styles.
             * `scripts.ts`: Client-side JavaScript logic.
     * `src/core/`: Core business logic.
+        * `dependencyScanner.ts`: Resolves local relative imports.
         * `fileScanner.ts`: Recursive file scanning with size limits.
         * `frameworkDetector.ts`: Logic to match projects against definitions.
         * `frameworks.ts`: Database of supported frameworks and preset rules.
@@ -32,6 +33,8 @@
 ### 1. Sidebar Panel
 * **Scan All**: Scans the entire workspace respecting `.gitignore`.
 * **Scan Git**: Scans only modified or untracked files (useful for code reviews).
+* **Resolve Imports**: Automatically selects files referenced by imports.
+* **Presets**: Save and restore custom file selections.
 * **Copy Tree**: Generates a lightweight structure-only snapshot (ASCII or Path List).
 * **Keyboard Nav**: Full accessibility support for navigating the tree view.
 * **Search**: Filter the file tree with visual highlighting and debouncing.

@@ -4,6 +4,18 @@ All notable changes to the "mager-project-copier" extension will be documented i
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
+## [0.0.5] - 2026-01-17
+
+### Added
+- **Smart Dependency Resolution**: Introduced a "Resolve Imports" feature (Link Icon). Automatically scans selected files for local `import` or `require` statements and recursively selects the referenced files in the tree.
+- **Selection Presets System**: Users can now **Save**, **Load**, and **Delete** custom file selection groups. Perfect for quickly switching between different contexts (e.g., "Auth Module", "Database Schema").
+- **Token Budget UI**: Added a visual indicator in the footer that warns users (via color change) when the estimated token count exceeds the configured `tokenBudget`.
+
+### Changed
+- **Core Architecture**: Added `dependencyScanner.ts` to handle AST-like regex parsing for import paths.
+- **Sidebar UI**: Added a new "Saved Selections" section and updated the toolbar with the Resolve Imports action.
+- **Configuration**: `magerProject.tokenBudget` is now synchronized with the frontend for real-time validation.
+
 ## [0.0.4] - 2025-12-31
 
 ### Added

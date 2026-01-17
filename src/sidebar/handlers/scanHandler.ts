@@ -21,10 +21,9 @@ export async function handleScanAction(
   uiState: UIState,
   mode: 'all' | 'git'
 ): Promise<ProjectNode | null> {
-  
+
   const { root } = await scanWorkspace({
-    useGitIgnore: uiState.useGitIgnore,
-    excludeSensitive: uiState.excludeSensitive
+    useGitIgnore: uiState.useGitIgnore
   });
 
   if (!root) {

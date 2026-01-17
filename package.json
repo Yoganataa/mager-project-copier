@@ -2,7 +2,7 @@
   "name": "mager-project-copier",
   "displayName": "Mager Project",
   "description": "Copy whole project into one AI-ready snapshot",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "publisher": "yoganataa",
   "icon": "assets/icons/icon.png",
   "repository": {
@@ -15,18 +15,16 @@
   "categories": [
     "Other"
   ],
-  "activationEvents": [
-    "onView:magerProject.sidebar"
-  ],
+
   "main": "./dist/extension.js",
   "contributes": {
     "configuration": {
       "title": "Mager Project",
       "properties": {
-        "magerProject.tokenLimit": {
+        "magerProject.tokenBudget": {
           "type": "number",
-          "default": 200000,
-          "description": "Token warning threshold. If the snapshot exceeds this limit, a warning will be shown before copying."
+          "default": 32000,
+          "description": "Token warning threshold. If the snapshot exceeds this limit, a warning will be shown."
         },
         "magerProject.customTemplates": {
           "type": "array",
@@ -72,7 +70,7 @@
         {
           "command": "magerProject.quickCopy",
           "group": "7_modification",
-          "when": "explorerResourceIsFolder"
+          "when": "explorerResourceIsFolder || explorerResourceIsFile"
         }
       ]
     },
@@ -90,10 +88,27 @@
         {
           "id": "magerProject.sidebar",
           "name": "Project Snapshot",
+          "icon": "assets/icons/icon.svg",
           "type": "webview"
         }
       ]
-    }
+    },
+    "problemMatchers": [
+      {
+        "name": "esbuild-watch",
+        "label": "esbuild-watch",
+        "owner": "typescript",
+        "source": "esbuild",
+        "applyTo": "closedDocuments",
+        "fileLocation": "relative",
+        "pattern": "$tsc",
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "^\\[watch\\] build started",
+          "endsPattern": "^\\[watch\\] build finished"
+        }
+      }
+    ]
   },
   "scripts": {
     "vscode:prepublish": "npm run package",
@@ -112,7 +127,7 @@
   "devDependencies": {
     "@types/mocha": "^10.0.10",
     "@types/node": "22.x",
-    "@types/vscode": "^1.107.0",
+    "@types/vscode": "^1.104.0",
     "@vscode/test-cli": "^0.0.12",
     "@vscode/test-electron": "^2.5.2",
     "esbuild": "^0.27.1",

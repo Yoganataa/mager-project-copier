@@ -1,10 +1,12 @@
 // src/extension.ts
 import * as vscode from 'vscode';
+import * as path from 'path';
 import { SidebarProvider } from './sidebar/SidebarProvider';
 import { scanWorkspace } from './core/fileScanner';
 import { buildSnapshot } from './core/snapshotBuilder';
 import { estimateTokens } from './core/tokenEstimator';
 import { UpdateManager } from './core/updateManager';
+import { ProjectNode } from './types';
 
 /**
  * The main entry point for the extension.
@@ -16,9 +18,9 @@ import { UpdateManager } from './core/updateManager';
  */
 export function activate(context: vscode.ExtensionContext): void {
   // --- Auto-Update Configuration ---
-  const GITHUB_REPO = 'yoganataa/mager-project-copier'; 
+  const GITHUB_REPO = 'yoganataa/mager-project-copier';
   const updateManager = new UpdateManager(context, GITHUB_REPO);
-  
+
   updateManager.checkForUpdates(true);
 
   context.subscriptions.push(
@@ -40,7 +42,7 @@ export function activate(context: vscode.ExtensionContext): void {
   // --- Context Menu Command: Quick Copy ---
   context.subscriptions.push(
     vscode.commands.registerCommand('magerProject.quickCopy', async (uri: vscode.Uri) => {
-      if (!uri) {return;}
+      if (!uri) { return; }
 
       await vscode.window.withProgress({
         location: vscode.ProgressLocation.Notification,
@@ -48,30 +50,54 @@ export function activate(context: vscode.ExtensionContext): void {
         cancellable: false
       }, async () => {
         try {
-            const { root } = await scanWorkspace({
-                targetPath: uri.fsPath,
-                useGitIgnore: true,       
-                excludeSensitive: true     
-            });
+          let root: ProjectNode | null = null;
+          
+          const stat = await vscode.workspace.fs.stat(uri);
 
-            if (!root) {
-                vscode.window.showWarningMessage("Mager Project: Folder is empty or ignored.");
-                return;
-            }
+          if (stat.type === vscode.FileType.Directory) {
+             const result = await scanWorkspace({
+               targetPath: uri.fsPath,
+               useGitIgnore: true
+             });
+             root = result.root;
+          } else {
+             // Handle single file
+             const parentPath = path.dirname(uri.fsPath);
+             root = {
+                 path: parentPath,
+                 name: path.basename(parentPath),
+                 type: 'directory',
+                 checked: true,
+                 children: [
+                     {
+                         path: uri.fsPath,
+                         name: path.basename(uri.fsPath),
+                         type: 'file',
+                         checked: true
+                     }
+                 ]
+             };
+          }
 
-            const snapshot = await buildSnapshot(root, 'markdown');
+          if (!root) {
+            vscode.window.showWarningMessage("Mager Project: Target is empty or ignored.");
+            return;
+          }
 
-            await vscode.env.clipboard.writeText(snapshot);
+          // Force includeProblems = true
+          const snapshot = await buildSnapshot(root, 'markdown', true);
 
-            const estimate = estimateTokens(snapshot, 0); 
-            
-            vscode.window.showInformationMessage(
-                `Copied! (~${estimate.tokens.toLocaleString()} tokens)`
-            );
+          await vscode.env.clipboard.writeText(snapshot);
+
+          const estimate = estimateTokens(snapshot, 0);
+
+          vscode.window.showInformationMessage(
+            `Copied! (~${estimate.tokens.toLocaleString()} tokens) with Problems included.`
+          );
 
         } catch (error) {
-            console.error(error);
-            vscode.window.showErrorMessage("Mager Project: Failed to copy snapshot.");
+          console.error(error);
+          vscode.window.showErrorMessage("Mager Project: Failed to copy snapshot.");
         }
       });
     })
@@ -82,4 +108,4 @@ export function activate(context: vscode.ExtensionContext): void {
  * Performs necessary cleanup when the extension is deactivated.
  * * This function is called when the extension is disabled or uninstalled.
  */
-export function deactivate(): void {}
+export function deactivate(): void { }

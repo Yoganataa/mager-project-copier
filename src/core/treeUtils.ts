@@ -15,9 +15,12 @@ export function updateNodeCheckState(
     root: ProjectNode,
     targetPath: string,
     checked: boolean
-): void {
-    updateDown(root, targetPath, checked);
-    updateUp(root);
+): boolean {
+    const found = updateDown(root, targetPath, checked);
+    if (found) {
+        updateUp(root);
+    }
+    return found;
 }
 
 /**

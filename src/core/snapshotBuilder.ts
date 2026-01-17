@@ -16,20 +16,22 @@ export type SnapshotFormat = 'markdown' | 'xml';
  * metadata skipping (e.g., for binary or large files).
  * * @param root - The root node of the project tree containing the file selection state.
  * @param format - The desired output format ('markdown' or 'xml'). Defaults to 'markdown'.
+ * @param includeProblems - Whether to append diagnostic information (errors/warnings) to the file content.
  * @returns A promise resolving to the generated snapshot string.
  */
 export async function buildSnapshot(
     root: ProjectNode,
-    format: SnapshotFormat = 'markdown'
+    format: SnapshotFormat = 'markdown',
+    includeProblems: boolean = false
 ): Promise<string> {
     const files: ProjectNode[] = [];
     collectCheckedFiles(root, files);
 
     if (format === 'xml') {
         let output = '<documents>\n';
-        
+
         const structure = buildPathTree(root);
-        
+
         output += `  <document index="1">\n`;
         output += `    <source>project_structure.txt</source>\n`;
         output += `    <document_content>\n${structure}\n    </document_content>\n`;
@@ -38,17 +40,17 @@ export async function buildSnapshot(
         let index = 2;
         for (const file of files) {
             const relative = path.relative(root.path, file.path);
-            
+
             output += `  <document index="${index}">\n`;
             output += `    <source>${relative}</source>\n`;
             output += `    <document_content>\n`;
-            
+
             if (file.meta) {
-                 output += `[Skipped: ${file.meta}]\n`;
+                output += `[Skipped: ${file.meta}]\n`;
             } else {
-                 const uri = vscode.Uri.file(file.path);
-                 const content = await readTextFile(uri);
-                 output += content !== null ? content : '[Skipped: Binary or Unreadable]';
+                const uri = vscode.Uri.file(file.path);
+                const content = await readTextFile(uri);
+                output += content !== null ? content : '[Skipped: Binary or Unreadable]';
             }
 
             output += `\n    </document_content>\n`;
@@ -67,14 +69,25 @@ export async function buildSnapshot(
         const lang = mapLanguage(file.name);
 
         output += `\n## ${relative}\n`;
-        
+
         if (file.meta) {
             output += `> [Skipped: ${file.meta}]\n`;
         } else {
             const uri = vscode.Uri.file(file.path);
-            const content = await readTextFile(uri);
-            
+            let content = await readTextFile(uri);
+
             if (content !== null) {
+                // INJECT PROBLEMS HERE
+                if (includeProblems) {
+                    const problems = getFileProblems(uri);
+                    if (problems) {
+                        content += `\n\n// ---------------------------------------------------------`;
+                        content += `\n// 🚨 DETECTED PROBLEMS`;
+                        content += `\n// ---------------------------------------------------------\n`;
+                        content += problems;
+                    }
+                }
+
                 output += `\`\`\`${lang}\n${content}\n\`\`\`\n`;
             } else {
                 output += `> [Skipped: Binary or Unreadable]\n`;
@@ -83,6 +96,23 @@ export async function buildSnapshot(
     }
 
     return output;
+}
+
+/**
+ * Helper to fetch and format diagnostics (Errors/Warnings) for a file.
+ */
+function getFileProblems(uri: vscode.Uri): string {
+    const diagnostics = vscode.languages.getDiagnostics(uri);
+    if (diagnostics.length === 0) { return ''; }
+
+    return diagnostics
+        .filter(d => d.severity === vscode.DiagnosticSeverity.Error || d.severity === vscode.DiagnosticSeverity.Warning)
+        .map(d => {
+            const type = d.severity === vscode.DiagnosticSeverity.Error ? 'Error' : 'Warning';
+            // Line numbers are 0-based in API, so we add 1 for display
+            return `// [${type}] Line ${d.range.start.line + 1}: ${d.message}`;
+        })
+        .join('\n');
 }
 
 /**
@@ -107,26 +137,26 @@ export function buildPathTree(root: ProjectNode): string {
  */
 export function buildAsciiTree(root: ProjectNode): string {
     let output = `${root.name}/\n`;
-    
+
     const traverse = (node: ProjectNode, prefix: string, isLast: boolean) => {
-        if (!node.children) {return;}
+        if (!node.children) { return; }
 
         const visibleChildren = node.children.filter(child => {
-            if (child.type === 'file') {return child.checked;}
+            if (child.type === 'file') { return child.checked; }
             return hasCheckedDescendant(child);
         });
 
         visibleChildren.forEach((child, index) => {
             const isChildLast = index === visibleChildren.length - 1;
             const connector = isChildLast ? '└── ' : '├── ';
-            
+
             let displayName = child.name;
             if (child.type === 'file' && child.meta) {
                 displayName += ` [${child.meta}]`;
             }
 
             output += `${prefix}${connector}${displayName}${child.type === 'directory' ? '/' : ''}\n`;
-            
+
             if (child.type === 'directory') {
                 const childPrefix = prefix + (isChildLast ? '    ' : '│   ');
                 traverse(child, childPrefix, isChildLast);
@@ -163,6 +193,6 @@ function collectCheckedFiles(
  * @returns `true` if the node or any of its children are checked.
  */
 function hasCheckedDescendant(node: ProjectNode): boolean {
-    if (node.type === 'file') {return node.checked;}
+    if (node.type === 'file') { return node.checked; }
     return node.children?.some(child => hasCheckedDescendant(child)) ?? false;
 }

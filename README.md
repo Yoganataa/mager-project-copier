@@ -13,6 +13,8 @@ Stop manually copying files one by one. Create a comprehensive, AI-ready snapsho
 * **🚀 Flexible Export Formats**: Choose between optimized formats based on your needs:
     * **Markdown**: Standard format, great for GPT-5, Gemini, and documentation.
     * **XML**: Structured format, optimized for Claude's long-context reasoning.
+* **🔗 Smart Dependency Resolution**: (New in v0.0.5) Automatically scans your selected files for `import` statements and selects the referenced local files to ensure your context is complete.
+* **💾 Selection Presets**: (New in v0.0.5) Save your frequently used file selections (e.g., "Auth Flow", "Database Models") and reload them instantly.
 * **🧠 Smart Framework Detection**: Automatically detects 25+ frameworks (Next.js, Flutter, Laravel, Spring Boot, etc.) and selects the most relevant files for context.
 * **🌳 Copy Tree Only**: Need to ask AI about project structure? Copy just the folder tree in **ASCII** or **Path List** format to save tokens.
 * **⌨️ Keyboard Navigation**: Fully navigable file tree using Arrow keys, Space to select, and Enter to open.
@@ -41,6 +43,8 @@ Since this extension is **Self-Hosted** (not in the Marketplace yet), you can in
 Open the **Mager Project** view in the Activity Bar.
 * **Scan All**: Scans the entire workspace (Auto-runs on startup).
 * **Scan Git**: Scans only files that have changed.
+* **Resolve Imports (🔗)**: Recursively finds and checks files imported by your currently checked files.
+* **Presets**: Save or load file selection groups from the dropdown menu.
 * **Format**: Select **Markdown** or **XML** output.
 * **Copy All**: Copies the full snapshot (Structure + Content) to your clipboard.
 * **Copy Tree**: Copies only the directory structure (ASCII/Path).
@@ -59,8 +63,8 @@ You can customize the extension behavior in `settings.json`:
 
 ```json
 {
-  // Set warning threshold for token count (default: 200000)
-  "magerProject.tokenLimit": 500000,
+  // Set warning threshold for token count (default: 32000)
+  "magerProject.tokenBudget": 50000,
 
   // Define custom prompts
   "magerProject.customTemplates": [
@@ -73,4 +77,5 @@ You can customize the extension behavior in `settings.json`:
   ]
 }
 ```
+
 Build with ❤️ by Yoganataa

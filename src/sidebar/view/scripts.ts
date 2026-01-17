@@ -2,14 +2,14 @@
 import { FILE_ICON_MAP, EXACT_FILE_MAP } from './iconMap';
 
 export function getScripts(basePath: string): string {
-  const fileMapJson = JSON.stringify(FILE_ICON_MAP);
-  const exactFileMapJson = JSON.stringify(EXACT_FILE_MAP);
-  
-  const ICON_CHEVRON_SVG = `<svg width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" fill="currentColor"><path fill-rule="evenodd" clip-rule="evenodd" d="M10.072 8.024L5.715 3.667l.618-.62L11 7.714v.619l-4.667 4.667-.619-.62 4.358-4.357z"/></svg>`;
-  const ICON_COLLAPSE_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M4,2A2,2 0 0,0 2,4V14H4V4H14V2H4M8,6A2,2 0 0,0 6,8V18H8V8H18V6H8M20,12V20H12V12H20M20,10H12A2,2 0 0,0 10,12V20A2,2 0 0,0 12,22H20A2,2 0 0,0 20,10M19,17H13V15H19V17Z" /></svg>`;
-  const ICON_EXPAND_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M4,2A2,2 0 0,0 2,4V14H4V4H14V2H4M8,6A2,2 0 0,0 6,8V18H8V8H18V6H8M20,12V20H12V12H20M20,10H12A2,2 0 0,0 10,12V20A2,2 0 0,0 12,22H20A2,2 0 0,0 20,10M19,17H17V19H15V17H13V15H15V13H17V15H19V17Z" /></svg>`;
+    const fileMapJson = JSON.stringify(FILE_ICON_MAP);
+    const exactFileMapJson = JSON.stringify(EXACT_FILE_MAP);
 
-  return `
+    const ICON_CHEVRON_SVG = `<svg width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" fill="currentColor"><path fill-rule="evenodd" clip-rule="evenodd" d="M10.072 8.024L5.715 3.667l.618-.62L11 7.714v.619l-4.667 4.667-.619-.62 4.358-4.357z"/></svg>`;
+    const ICON_COLLAPSE_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M4,2A2,2 0 0,0 2,4V14H4V4H14V2H4M8,6A2,2 0 0,0 6,8V18H8V8H18V6H8M20,12V20H12V12H20M20,10H12A2,2 0 0,0 10,12V20A2,2 0 0,0 12,22H20A2,2 0 0,0 20,10M19,17H13V15H19V17Z" /></svg>`;
+    const ICON_EXPAND_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M4,2A2,2 0 0,0 2,4V14H4V4H14V2H4M8,6A2,2 0 0,0 6,8V18H8V8H18V6H8M20,12V20H12V12H20M20,10H12A2,2 0 0,0 10,12V20A2,2 0 0,0 12,22H20A2,2 0 0,0 20,10M19,17H17V19H15V17H13V15H15V13H17V15H19V17Z" /></svg>`;
+
+    return `
   <script>
     const vscode = acquireVsCodeApi();
     const treeEl = document.getElementById('tree');
@@ -18,6 +18,9 @@ export function getScripts(basePath: string): string {
     const FILE_MAP = ${fileMapJson};
     const EXACT_MAP = ${exactFileMapJson};
     
+
+    
+    let tokenBudget = 32000;
     let isAllCollapsed = false;
     const COLLAPSE_ICON = '${ICON_COLLAPSE_SVG}';
     const EXPAND_ICON = '${ICON_EXPAND_SVG}';
@@ -171,7 +174,15 @@ export function getScripts(basePath: string): string {
         document.getElementById('selectedCount').textContent = fileCount + ' files';
         const estTokens = fileCount * 400; 
         const tokenText = estTokens > 1000 ? (estTokens/1000).toFixed(1) + 'k' : estTokens;
-        document.getElementById('tokenCount').textContent = '~' + tokenText + ' tokens';
+        
+        const tokenEl = document.getElementById('tokenCount');
+        tokenEl.textContent = '~' + tokenText + ' tokens';
+        
+        if (estTokens > tokenBudget) {
+            tokenEl.classList.add('warning-text');
+        } else {
+            tokenEl.classList.remove('warning-text');
+        }
     }
 
     function escapeRegExp(string) {
@@ -347,10 +358,11 @@ export function getScripts(basePath: string): string {
       const { command, payload } = event.data;
       if (command === 'uiState') {
         document.getElementById('gitignore').checked = payload.useGitIgnore;
-        document.getElementById('sensitive').checked = payload.excludeSensitive;
+        document.getElementById('problems').checked = payload.includeProblems;
         
         if(payload.selectedFormat) document.getElementById('formatSelect').value = payload.selectedFormat;
         if(payload.selectedTemplate) document.getElementById('templateSelect').value = payload.selectedTemplate;
+        if(payload.tokenBudget) tokenBudget = payload.tokenBudget;
       }
       if (command === 'tree') {
         treeEl.innerHTML = '';
@@ -360,10 +372,40 @@ export function getScripts(basePath: string): string {
         isAllCollapsed = false;
         document.getElementById('collapseIcon').innerHTML = COLLAPSE_ICON;
       }
+      if (command === 'presetsList') {
+          const select = document.getElementById('presetSelect');
+          select.innerHTML = '<option value="" disabled selected>Select a preset...</option>';
+          payload.forEach(name => {
+              const opt = document.createElement('option');
+              opt.value = name;
+              opt.textContent = name;
+              select.appendChild(opt);
+          });
+      }
       if (command === 'actionComplete') {
           setLoading(false);
       }
     });
+
+    document.getElementById('savePreset').onclick = () => {
+        const name = prompt('Preset Name:');
+        if (name) vscode.postMessage({ command: 'savePreset', name });
+    };
+
+    document.getElementById('loadPreset').onclick = () => {
+        const name = document.getElementById('presetSelect').value;
+        if (name) vscode.postMessage({ command: 'loadPreset', name });
+    };
+
+    document.getElementById('deletePreset').onclick = () => {
+        const name = document.getElementById('presetSelect').value;
+        if (name && confirm('Delete preset "' + name + '"?')) {
+            vscode.postMessage({ command: 'deletePreset', name });
+        }
+    };
+
+    // Request presets on load
+    vscode.postMessage({ command: 'getPresets' });
 
     document.getElementById('formatSelect').onchange = (e) => vscode.postMessage({ command: 'changeFormat', value: e.target.value });
     document.getElementById('templateSelect').onchange = (e) => vscode.postMessage({ command: 'changeTemplate', value: e.target.value });
@@ -371,12 +413,13 @@ export function getScripts(basePath: string): string {
     document.getElementById('scan').onclick = () => { setLoading(true); vscode.postMessage({ command: 'scan' }); };
     document.getElementById('scanGit').onclick = () => { setLoading(true); vscode.postMessage({ command: 'scanGit' }); };
     document.getElementById('preset').onclick = () => vscode.postMessage({ command: 'preset' });
+    document.getElementById('resolveImports').onclick = () => { setLoading(true); vscode.postMessage({ command: 'resolveImports' }); };
     document.getElementById('copy').onclick = () => { setLoading(true); vscode.postMessage({ command: 'copy' }); };
     document.getElementById('copyTree').onclick = () => { setLoading(true); vscode.postMessage({ command: 'copyTree' }); };
     document.getElementById('export').onclick = () => { setLoading(true); vscode.postMessage({ command: 'export' }); };
     
     document.getElementById('gitignore').onchange = e => vscode.postMessage({ command: 'toggleGitIgnore', value: e.target.checked });
-    document.getElementById('sensitive').onchange = e => vscode.postMessage({ command: 'toggleSensitive', value: e.target.checked });
+    document.getElementById('problems').onchange = e => vscode.postMessage({ command: 'toggleProblems', value: e.target.checked });
 
     vscode.postMessage({ command: 'webviewReady' });
   </script>

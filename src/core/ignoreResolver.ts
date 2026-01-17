@@ -12,9 +12,6 @@ export type IgnoreOptions = {
 
   /** Whether to respect rules defined in the project's .gitignore file. */
   useGitIgnore: boolean;
-
-  /** Whether to automatically exclude sensitive files (e.g., .env, private keys). */
-  excludeSensitive: boolean;
 };
 
 /**
@@ -26,7 +23,6 @@ export type IgnoreOptions = {
  */
 export class IgnoreResolver {
   private readonly rootPath: string;
-  private readonly excludeSensitive: boolean;
   private gitIgnore: Ignore | null = null;
 
   /**
@@ -63,17 +59,7 @@ export class IgnoreResolver {
     'README.md'
   ]);
 
-  /**
-   * Regular expressions matching sensitive file patterns that must never be auto-selected.
-   * This ensures secrets and credentials are not accidentally exposed.
-   */
-  private static readonly SENSITIVE_PATTERNS: RegExp[] = [
-    /^\.env($|\.)/,
-    /\.pem$/,
-    /\.key$/,
-    /id_rsa/,
-    /id_ed25519/
-  ];
+
 
   /**
    * Creates an instance of IgnoreResolver.
@@ -81,7 +67,6 @@ export class IgnoreResolver {
    */
   constructor(options: IgnoreOptions) {
     this.rootPath = this.normalize(options.rootPath);
-    this.excludeSensitive = options.excludeSensitive;
 
     if (options.useGitIgnore) {
       this.loadGitIgnore();
@@ -110,14 +95,7 @@ export class IgnoreResolver {
       return false;
     }
 
-    if (
-      this.excludeSensitive &&
-      IgnoreResolver.SENSITIVE_PATTERNS.some(r =>
-        r.test(baseName)
-      )
-    ) {
-      return true;
-    }
+
 
     if (this.gitIgnore) {
       const relative = path

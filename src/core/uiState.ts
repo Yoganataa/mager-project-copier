@@ -9,8 +9,10 @@ import * as vscode from 'vscode';
 export type UIState = {
     /** Indicates whether the `.gitignore` exclusion filter is currently active. */
     useGitIgnore: boolean;
-    /** Indicates whether sensitive files (e.g., `.env`, credentials) are currently hidden. */
-    excludeSensitive: boolean;
+    /** * Indicates whether to append VS Code problems (Errors/Warnings) to the snapshot. 
+     * Replaces the old 'excludeSensitive' toggle.
+     */
+    includeProblems: boolean;
     /** The identifier of the currently selected output format for snapshot generation. */
     selectedFormat: 'markdown' | 'xml';
     /** The unique identifier of the currently selected prompt template. */
@@ -30,10 +32,10 @@ export function loadUIState(
     context: vscode.ExtensionContext
 ): UIState {
     const saved = context.workspaceState.get<Partial<UIState>>(STORAGE_KEY);
-    
+
     const defaults: UIState = {
         useGitIgnore: true,
-        excludeSensitive: true,
+        includeProblems: false,
         selectedFormat: 'markdown',
         selectedTemplate: 'default'
     };
