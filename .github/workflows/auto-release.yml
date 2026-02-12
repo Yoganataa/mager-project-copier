@@ -1,95 +1,83 @@
-name: Auto Release & Publish
+name: Release
 
 on:
   push:
-    branches:
-      - master
-
-permissions:
-  contents: write
+    tags:
+      - 'v*'
 
 jobs:
-  check-and-release:
-    runs-on: ubuntu-latest
+  build:
+    name: Build - ${{ matrix.platform.name }}
+    runs-on: ${{ matrix.platform.os }}
+    strategy:
+      matrix:
+        platform:
+          - name: Linux (x86_64)
+            os: ubuntu-latest
+            target: x86_64-unknown-linux-musl
+            bin: mager
+          - name: macOS (x86_64)
+            os: macos-latest
+            target: x86_64-apple-darwin
+            bin: mager
+          - name: macOS (ARM64)
+            os: macos-latest
+            target: aarch64-apple-darwin
+            bin: mager
+          - name: Windows (x86_64)
+            os: windows-latest
+            target: x86_64-pc-windows-msvc
+            bin: mager.exe
 
     steps:
-      - name: Checkout repository (full history)
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+      
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
         with:
-          fetch-depth: 0
+          targets: ${{ matrix.platform.target }}
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - name: Install Linux dependencies
+        if: matrix.platform.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y musl-tools
+
+      - name: Build TUI (Release)
+        run: cargo build --release --target ${{ matrix.platform.target }} --bin mager_tui
+
+      - name: Rename Binary
+        shell: bash
+        run: |
+          mkdir dist
+          cp target/${{ matrix.platform.target }}/release/mager_tui${{ matrix.platform.os == 'windows-latest' && '.exe' || '' }} dist/${{ matrix.platform.bin }}-${{ matrix.platform.target }}${{ matrix.platform.os == 'windows-latest' && '.exe' || '' }}
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
         with:
-          node-version: 20
+          name: mager-${{ matrix.platform.target }}
+          path: dist/*
 
-      - name: Read version from package.json
-        id: version
-        run: |
-          VERSION=$(node -p "require('./package.json').version")
-          echo "VERSION=$VERSION" >> $GITHUB_ENV
-          echo "Detected version: $VERSION"
+  release:
+    name: Create Release
+    needs: [build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
 
-      - name: Check if git tag exists
-        id: tag-check
-        run: |
-          if git rev-parse "v${VERSION}" >/dev/null 2>&1; then
-            echo "exists=true" >> $GITHUB_OUTPUT
-            echo "Tag v${VERSION} already exists. Skipping release."
-          else
-            echo "exists=false" >> $GITHUB_OUTPUT
-            echo "Tag v${VERSION} does not exist. Proceeding."
-          fi
+      - name: Display structure of downloaded files
+        run: ls -R artifacts
 
-      - name: Extract changelog for version
-        if: steps.tag-check.outputs.exists == 'false'
-        run: |
-          OUTPUT_FILE="release-notes.md"
-
-          if ! grep -q "^## \[${VERSION}\]" CHANGELOG.md; then
-            echo "## v${VERSION}" > "$OUTPUT_FILE"
-            echo "" >> "$OUTPUT_FILE"
-            echo "_No changelog entry found for this version._" >> "$OUTPUT_FILE"
-          else
-            awk -v ver="$VERSION" '
-              $0 ~ "^## \\[" ver "\\]" {flag=1; next}
-              /^## \[/ && flag {exit}
-              flag {print}
-            ' CHANGELOG.md > "$OUTPUT_FILE"
-          fi
-
-          echo "Generated release notes:"
-          cat "$OUTPUT_FILE"
-
-      - name: Create git tag
-        if: steps.tag-check.outputs.exists == 'false'
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag -a "v${VERSION}" -m "Release v${VERSION}"
-          git push origin "v${VERSION}"
-
-      - name: Install dependencies
-        if: steps.tag-check.outputs.exists == 'false'
-        run: npm ci
-
-      - name: Install vsce
-        if: steps.tag-check.outputs.exists == 'false'
-        run: npm install -g @vscode/vsce
-
-      - name: Package VS Code extension
-        if: steps.tag-check.outputs.exists == 'false'
-        run: vsce package
-
-      - name: Create GitHub Release
-        if: steps.tag-check.outputs.exists == 'false'
+      - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: v${{ env.VERSION }}
-          name: v${{ env.VERSION }}
-          body_path: release-notes.md
-          files: "*.vsix"
+          files: artifacts/**/*
           draft: false
           prerelease: false
+          generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
