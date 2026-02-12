@@ -1,76 +1,73 @@
 # Mager Project Copier
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![VS Code](https://img.shields.io/badge/Visual%20Studio%20Code-007ACC?logo=visual-studio-code&logoColor=white)](https://code.visualstudio.com/)
-[![GitHub Release](https://img.shields.io/github/v/release/yoganataa/mager-project-copier?label=latest%20release)](https://github.com/yoganataa/mager-project-copier/releases)
+Mager is a high-performance **Rust-based TUI and CLI tool** for scanning project structures and copying their contents into a format optimized for LLMs (Large Language Models).
 
-**Mager Project Copier** is a powerful VS Code extension designed to streamline the process of sharing your code context with AI Large Language Models (LLMs) like Claude, GPT-5, and Gemini.
+![Mager TUI](https://raw.githubusercontent.com/mager-project/copier/main/assets/tui-demo.gif)
 
-Stop manually copying files one by one. Create a comprehensive, AI-ready snapshot of your entire project (or just the git changes) with a single click.
+## Features
 
-## ✨ Key Features
+- **Blazing Fast**: Uses the `ignore` crate (same engine as `ripgrep`) for efficient, parallel file scanning.
+- **Smart Filtering**: Respects `.gitignore`, hidden files, and automatically detects binary/large files to skip.
+- **Interactive TUI**: Navigate your project tree, toggle files/folders, and preview content before copying.
+- **Headless CLI**: Automate snapshot generation for CI/CD or scripts.
+- **Token Efficient**: Estimates token usage and warns about large files.
+- **Deterministic**: Always produces the same output structure for the same project state.
 
-* **🚀 Flexible Export Formats**: Choose between optimized formats based on your needs:
-    * **Markdown**: Standard format, great for GPT-5, Gemini, and documentation.
-    * **XML**: Structured format, optimized for Claude's long-context reasoning.
-* **🧠 Smart Framework Detection**: Automatically detects 25+ frameworks (Next.js, Flutter, Laravel, Spring Boot, etc.) and selects the most relevant files for context.
-* **🌳 Copy Tree Only**: Need to ask AI about project structure? Copy just the folder tree in **ASCII** or **Path List** format to save tokens.
-* **⌨️ Keyboard Navigation**: Fully navigable file tree using Arrow keys, Space to select, and Enter to open.
-* **Git Integration**: Use **"Scan Git"** to copy *only* modified and untracked files. Perfect for Code Reviews!
-* **⚡ Auto-Update**: Self-hosted auto-update system. The extension automatically checks GitHub Releases for new versions.
-* **🎨 Custom Templates**: Add your own prompts via `settings.json`.
-* **🛡️ Smart Filtering & Optimization**:
-    * Respects `.gitignore` rules.
-    * Auto-hides sensitive files (`.env`, secrets).
-    * **Smart Placeholders**: Large files (>1MB) and Binaries are shown in the tree structure but their content is skipped to save tokens.
-* **🔍 Search & Highlight**: Real-time filter bar with debouncing and text highlighting.
+## Installation
 
-## 📥 Installation
+### From Binary
+Download the latest release for your platform from the [Releases](https://github.com/mager-project/copier/releases) page.
 
-Since this extension is **Self-Hosted** (not in the Marketplace yet), you can install it manually:
-
-1.  Go to the [**Releases**](https://github.com/yoganataa/mager-project-copier/releases) page.
-2.  Download the latest `.vsix` file.
-3.  In VS Code, open the Extensions view (`Ctrl+Shift+X`).
-4.  Click the `...` menu (Views and More Actions) > **Install from VSIX...**
-5.  Select the downloaded file.
-
-## 📖 Usage
-
-### 1. Sidebar Panel
-Open the **Mager Project** view in the Activity Bar.
-* **Scan All**: Scans the entire workspace (Auto-runs on startup).
-* **Scan Git**: Scans only files that have changed.
-* **Format**: Select **Markdown** or **XML** output.
-* **Copy All**: Copies the full snapshot (Structure + Content) to your clipboard.
-* **Copy Tree**: Copies only the directory structure (ASCII/Path).
-* **Reset**: Click the Trash icon in the footer to uncheck all files.
-
-### 2. Keyboard Shortcuts
-Navigate the file tree efficiently:
-* `⬆️` / `⬇️`: Navigate rows.
-* `➡️`: Expand folder / Move to child.
-* `⬅️`: Collapse folder / Move to parent.
-* `Space`: Check / Uncheck file.
-* `Enter`: Open file in editor / Toggle folder.
-
-### 3. Configuration
-You can customize the extension behavior in `settings.json`:
-
-```json
-{
-  // Set warning threshold for token count (default: 200000)
-  "magerProject.tokenLimit": 500000,
-
-  // Define custom prompts
-  "magerProject.customTemplates": [
-    {
-      "id": "senior-review",
-      "label": "Senior Dev Review",
-      "description": "Strict code review mode",
-      "prompt": "You are a Senior Engineer. Review this code strictly for performance:\n\n{context}"
-    }
-  ]
-}
+### From Source
+```bash
+cargo install --path crates/mager_tui
+cargo install --path crates/mager_cli
 ```
-Build with ❤️ by Yoganataa
+
+## Usage
+
+### TUI (Interactive Mode)
+Launch the interactive interface to explore and select files.
+
+```bash
+mager_tui [path]
+```
+
+- **Up/Down**: Navigate the file tree.
+- **Space**: Toggle selection of file or directory (recursive).
+- **s**: Rescan the project.
+- **c**: Copy the generated snapshot to clipboard.
+- **q**: Quit.
+
+### CLI (Headless Mode)
+Generate a snapshot directly to a file or stdout.
+
+```bash
+mager_cli --path . --output context.md
+```
+
+Options:
+- `--path <PATH>`: Root directory to scan (default: `.`)
+- `--output <FILE>`: Output file path. If omitted, prints to stdout.
+- `--verbose`: Enable debug logging.
+- `--template <ID>`: Apply a prompt template (e.g., `default`, `review`, `explain`).
+
+## Architecture
+
+The project is organized as a Rust workspace:
+
+- `mager_core`: The business logic library. Handles file scanning, ignore rules, tree state management, and snapshot generation. UI-agnostic.
+- `mager_tui`: The interactive frontend using `ratatui` and `crossterm`.
+- `mager_cli`: The command-line interface using `clap`.
+
+## Contributing
+
+1. Fork the repository.
+2. Create a feature branch (`git checkout -b feature/amazing-feature`).
+3. Commit your changes (`git commit -m 'Add some amazing feature'`).
+4. Push to the branch (`git push origin feature/amazing-feature`).
+5. Open a Pull Request.
+
+## License
+
+MIT
