@@ -1,0 +1,44 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/mager_core",
+    "crates/mager_tui",
+    "crates/mager_cli",
+]
+
+[workspace.dependencies]
+# Internal
+mager_core = { path = "crates/mager_core" }
+
+# Error Handling
+thiserror = "1.0"
+anyhow = "1.0"
+
+# Async
+tokio = { version = "1.0", features = ["full"] }
+
+# Filesystem
+ignore = "0.4"
+walkdir = "2.4"
+
+# TUI
+ratatui = "0.26"
+crossterm = "0.27"
+
+# CLI
+clap = { version = "4.4", features = ["derive"] }
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# Logging
+tracing = "0.1"
+tracing-subscriber = "0.3"
+
+# Utils
+textwrap = "0.16"
+arboard = "3.3" # Clipboard
+directories = "5.0"
+regex = "1.10"
+lazy_static = "1.4"
